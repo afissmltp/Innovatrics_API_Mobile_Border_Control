@@ -43,6 +43,7 @@ public class CustomerDataActivity extends AppCompatActivity {
     private TextView tvDocumentNumber;
     private TextView tvDateOfExpiry;
     private TextView tvIssuingAuthority;
+    private TextView tvMrzRaw;
     private CustomerService customerService;
     private ImageView imageView; // For document portrait
     private ImageView imageView2; // For customer selfie
@@ -70,7 +71,7 @@ public class CustomerDataActivity extends AppCompatActivity {
         tvDocumentNumber = findViewById(R.id.tvDocumentNumber);
         tvDateOfExpiry = findViewById(R.id.tvDateOfExpiry);
         tvIssuingAuthority = findViewById(R.id.tvIssuingAuthority);
-
+        tvMrzRaw = findViewById(R.id.tvMrzRaw);
         tvSimilarityScore = findViewById(R.id.tvSimilarityScore);
 
 
@@ -243,6 +244,7 @@ public class CustomerDataActivity extends AppCompatActivity {
         try {
             JSONObject customer = customerData.getJSONObject("customer");
 
+            // Champs de base (nom, prénom, etc.)
             JSONObject givenNames = customer.optJSONObject("givenNames");
             String name = (givenNames != null && givenNames.has("mrz")) ? givenNames.getString("mrz") : "N/A";
 
@@ -260,6 +262,7 @@ public class CustomerDataActivity extends AppCompatActivity {
 
             JSONObject document = customer.getJSONObject("document");
 
+            // Type du document (ex : TD3)
             String docType = "N/A";
             JSONObject mrz = document.optJSONObject("mrz");
             if (mrz != null) {
@@ -278,6 +281,17 @@ public class CustomerDataActivity extends AppCompatActivity {
             JSONObject issuingAuthority = document.optJSONObject("issuingAuthority");
             String issuingAuth = (issuingAuthority != null && issuingAuthority.has("mrz")) ? issuingAuthority.getString("mrz") : "N/A";
 
+            // MRZ brut (texte)
+            String mrzText = "N/A";
+            JSONObject additionalTexts = document.optJSONObject("additionalTexts");
+            if (additionalTexts != null) {
+                JSONObject machineReadableZone = additionalTexts.optJSONObject("machineReadableZone");
+                if (machineReadableZone != null && machineReadableZone.has("visualZone")) {
+                    mrzText = machineReadableZone.getString("visualZone");
+                }
+            }
+
+            // Affichage dans les TextViews
             tvName.setText("Name: " + name);
             tvSurname.setText("Surname: " + surName);
             tvDateOfBirth.setText("Date of Birth: " + dob);
@@ -287,12 +301,14 @@ public class CustomerDataActivity extends AppCompatActivity {
             tvDocumentNumber.setText("Document Number: " + docNum);
             tvDateOfExpiry.setText("Date of Expiry: " + expiry);
             tvIssuingAuthority.setText("Issuing Authority: " + issuingAuth);
+            tvMrzRaw.setText("MRZ:\n" + mrzText);
 
         } catch (JSONException e) {
             e.printStackTrace();
             Toast.makeText(this, "Error extracting data from JSON", Toast.LENGTH_SHORT).show();
         }
     }
+
 
     private boolean hasCameraPermission() {
         return ContextCompat.checkSelfPermission(

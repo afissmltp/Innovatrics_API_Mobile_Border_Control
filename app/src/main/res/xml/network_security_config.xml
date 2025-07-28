@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">4dc31b147ad2.ngrok-free.app</domain>
+        <domain includeSubdomains="true">874b54effe7e.ngrok-free.app</domain>
         <trust-anchors>
             <certificates src="system"/>
         </trust-anchors>

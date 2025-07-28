@@ -25,18 +25,18 @@
             android:layout_marginBottom="32dp"/>
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_width="356dp"
+            android:layout_height="114dp"
+            android:layout_marginBottom="24dp"
             android:gravity="center"
-            android:layout_marginBottom="24dp">
+            android:orientation="horizontal">
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/imageView"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
-                android:scaleType="centerCrop"
                 android:layout_marginEnd="24dp"
+                android:scaleType="centerCrop"
                 app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.CornerSize50Percent"
                 tools:srcCompat="@tools:sample/avatars" />
 
@@ -44,8 +44,8 @@
                 android:id="@+id/imageView2"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
-                android:scaleType="centerCrop"
                 android:layout_marginEnd="24dp"
+                android:scaleType="centerCrop"
                 app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.CornerSize50Percent"
                 tools:srcCompat="@tools:sample/avatars" />
 
@@ -74,8 +74,8 @@
             app:iconTint="@android:color/white" />
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="369dp"
+            android:layout_height="390dp"
             android:layout_marginBottom="16dp"
             android:background="@drawable/rounded_background"
             android:orientation="vertical"
@@ -126,6 +126,10 @@
                 style="@style/DataFieldStyle"
                 android:text="Issuing Authority: " />
 
+            <TextView
+                android:id="@+id/tvMrzRaw"
+                style="@style/DataFieldStyle"
+                android:text="MRZ: " />
         </LinearLayout>
 
 
