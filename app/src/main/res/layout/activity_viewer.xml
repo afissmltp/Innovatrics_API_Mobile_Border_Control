@@ -5,14 +5,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ViewerActivity">
+
     <com.jsibbold.zoomage.ZoomageView
         android:id="@+id/normalizedImageView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/qualityPanel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/topButtonBar"
         android:src="@drawable/ic_launcher_background"
         app:zoomage_restrictBounds="false"
         app:zoomage_animateOnReset="true"
@@ -21,64 +22,143 @@
         app:zoomage_zoomable="true"
         app:zoomage_translatable="true"
         app:zoomage_minScale="0.6"
-        app:zoomage_maxScale="8"
-        />
+        app:zoomage_maxScale="8"/>
 
     <LinearLayout
-        android:id="@+id/linearLayout2"
+        android:id="@+id/topButtonBar"
         android:layout_width="0dp"
         android:layout_height="50dp"
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/normalizedImageView">
+        app:layout_constraintTop_toTopOf="parent">
 
         <Button
             android:id="@+id/rotateButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="Rotate" />
+            android:text="Rotate"/>
+
+        <Button
+            android:id="@+id/readDocBtn"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="Read"/>
 
         <Button
             android:id="@+id/saveImageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="Save" />
-
+            android:text="Save"/>
     </LinearLayout>
 
-    <RadioGroup
-        android:id="@+id/filterRadioGroup"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/qualityPanel"
         android:layout_width="0dp"
-        android:layout_height="50dp"
-        android:layout_weight="1"
-        android:orientation="horizontal"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        app:cardElevation="4dp"
+        app:cardCornerRadius="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <RadioButton
-            android:id="@+id/binaryRadioButton"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="Binary" />
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <RadioButton
-            android:id="@+id/grayscaleRadioButton"
-            android:layout_width="wrap_content"
+            <TextView
+                android:id="@+id/qualityStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:text="Document Quality: N/A"/>
+
+            <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Grayscale" />
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
 
-        <RadioButton
-            android:id="@+id/colorRadioButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Color" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Sharpness:"/>
 
-    </RadioGroup>
+            <TextView
+                android:id="@+id/sharpnessValue"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Not Available"/> </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Brightness:"/>
+
+                <TextView
+                    android:id="@+id/brightnessValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Not Available"/> </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Hotspots:"/>
+
+                <TextView
+                    android:id="@+id/hotspotsValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Not Available"/> </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@id/normalizedImageView"
+        app:layout_constraintEnd_toEndOf="@id/normalizedImageView"
+        app:layout_constraintStart_toStartOf="@id/normalizedImageView"
+        app:layout_constraintTop_toTopOf="@id/normalizedImageView"
+        android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/customerdata"
+        android:layout_width="254dp"
+        android:layout_height="66dp"
+        android:layout_marginTop="68dp"
+        android:text="Customer Data: Loading..."
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/normalizedImageView" />
 </androidx.constraintlayout.widget.ConstraintLayout>

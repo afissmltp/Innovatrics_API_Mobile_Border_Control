@@ -1,7 +1,6 @@
 package com.dynamsoft.documentscanner;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
@@ -21,13 +20,9 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.graphics.Point;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
-import android.view.Display;
-import android.view.Window;
 import android.view.WindowManager;
 
 import com.dynamsoft.core.basic_structures.CapturedResult;
@@ -35,11 +30,10 @@ import com.dynamsoft.core.basic_structures.CapturedResultItem;
 import com.dynamsoft.cvr.CaptureVisionRouter;
 import com.dynamsoft.cvr.CaptureVisionRouterException;
 import com.dynamsoft.ddn.DetectedQuadResultItem;
-import com.dynamsoft.ddn.DocumentNormalizerException;
 import com.google.common.util.concurrent.ListenableFuture;
 
+
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
