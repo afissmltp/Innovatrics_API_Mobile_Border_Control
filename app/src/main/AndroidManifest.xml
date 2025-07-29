@@ -7,6 +7,11 @@
         android:required="false" /> <!-- Permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" /> <!-- For Android 13+ WiFi scanning -->
+
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="true"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+
     <uses-permission
         android:name="android.permission.NEARBY_WIFI_DEVICES"
         android:usesPermissionFlags="neverForLocation" /> <!-- Optional: Only if you need legacy storage access -->
@@ -18,6 +23,7 @@
         android:maxSdkVersion="32" />
 
     <application
+        android:name=".MainApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -48,15 +54,20 @@
         <activity
             android:name=".FaceCameraActivity"
             android:exported="false" />
+        <activity android:name=".ui.CaptureActivity" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
+            android:launchMode="singleTop"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.nfc.action.TECH_DISCOVERED"
+                android:resource="@xml/nfc_tech_filter" />
         </activity>
     </application>
 
