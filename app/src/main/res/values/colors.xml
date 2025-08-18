@@ -11,4 +11,14 @@
     <color name="orange">#FF9800</color>
     <color name="red">#F44336</color>
     <color name="gray">#9E9E9E</color>
+    <color name="purple_app_bar">#673AB7</color>
+    <color name="card_gradient_start">#6A1B9A</color>
+    <color name="card_gradient_end">#42A5F5</color>
+    <color name="button_background_dark">#FF212121</color>
+    <color name="primary_color">#6200EE</color>
+    <color name="light_gray">#F5F5F5</color>
+    <color name="divider_gray">#E0E0E0</color>
+    <color name="primary_text">#212121</color>
+    <color name="secondary_text">#757575</color>
+    <color name="bright_foreground_material_light">#FFFFFFFF</color>
 </resources>

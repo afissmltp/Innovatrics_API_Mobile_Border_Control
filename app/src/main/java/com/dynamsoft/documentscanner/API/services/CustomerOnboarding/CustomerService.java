@@ -1,8 +1,13 @@
 package com.dynamsoft.documentscanner.API.services.CustomerOnboarding;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Log;
+
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -14,13 +19,16 @@ import okhttp3.Response;
 
 public class CustomerService {
     //private static final String BASE_URL = "http://10.0.2.2:8080/api/v1";
-    private static final String BASE_URL = "https://951e29673a68.ngrok-free.app/api/v1";
+    private static final String BASE_URL = "https://feea811070e7.ngrok-free.app/api/v1";
     private final OkHttpClient client;
     private static final String BEARER_TOKEN = "aW5rX2I5YWU5MjY5N2JlMjQ0Y2YwZmQ3NDNiNjMwMjE1ODVlOmluc19leUp0WlhSaFpHRjBZU0k2SUhzaVkyeHBaVzUwSWpvZ2V5SnBaQ0k2SUNJNVpUWmpOR1JpWWkxbU5qRm1MVFExWVRndFlUQTFaaTB3WkdVek1qUXlOamhpTm1FaUxDQWlibUZ0WlNJNklDSlRUVXhVVUNKOUxDQWliR2xqWlc1elpWOWpkWE4wYjIxZmNISnZjR1Z5ZEdsbGN5STZJSHNpTDJOdmJuUnlZV04wTDJSdmRDOWthWE12Wlc1aFlteGxaQ0k2SUNKMGNuVmxJaXdnSWk5amIyNTBjbUZqZEM5a2IzUXZaWFpoYkhWaGRHbHZiaUk2SUNKMGNuVmxJaXdnSWk5amIyNTBjbUZqZEM5a2IzUXZaR2x6TDJ4cFkyVnVjMlZXWlhKemFXOXVJam9nSWpNaUxDQWlMMk52Ym5SeVlXTjBMM050WVhKMFptRmpaVjlsYldKbFpHUmxaQzlsYm1GaWJHVWlPaUFpZEhKMVpTSXNJQ0l2WTI5dWRISmhZM1F2YzIxaGNuUm1ZV05sWDJWdFltVmtaR1ZrTDNCaGJHMGlPaUFpZEhKMVpTSXNJQ0l2WTI5dWRISmhZM1F2YzIxaGNuUm1ZV05sWDJWdFltVmtaR1ZrTDNCaGJHMWZiR2wyWlc1bGMzTWlPaUFpZEhKMVpTSjlMQ0FpWTNKbFlYUnBiMjVmZEdsdFpYTjBZVzF3SWpvZ0lqQTNMekV4THpJd01qVWdNRGs2TVRRNk1qQWdWVlJESWl3Z0luWmhiR2xrWDNSdklqb2dJakE1THpBNUx6SXdNalVnTURBNk1EQTZNREFnVlZSREluMHNJQ0p6YVdkdVlYUjFjbVVpT2lBaVNHbzFRVXB1Y0c4MFIyTjZMemhVVjJoNVdWQm9NVGc1U2xORlVqSklaV2xsV0hWblZqUlpPR1prVEU5UGRtOW5ZM3BDUVRsdWQzb3lSVGhaV0RGYUwxaEtaVXBQWjJ0T2IzWktSVFZpV21SbFZWcDJRbWM5UFNKOQ==";
 
-
     public CustomerService() {
-        this.client = new OkHttpClient();
+        this.client = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS) // 30 seconds to establish connection
+                .readTimeout(60, TimeUnit.SECONDS)    // 60 seconds to read data
+                .writeTimeout(60, TimeUnit.SECONDS)   // 60 seconds to write data
+                .build();
     }
 
     public void createCustomer(final ApiCallback callback) {
@@ -85,10 +93,6 @@ public class CustomerService {
         } catch (Exception e) {
             callback.onFailure(e);
         }
-    }
-    public interface ApiCallback {
-        void onSuccess(JSONObject response);
-        void onFailure(Exception e);
     }
 
     public void createDocumentFrontPage(String customerId, JSONObject requestBody, ApiCallback callback) {
@@ -348,5 +352,135 @@ public class CustomerService {
             }
         });
     }
+    // New method to get a document image
+    public void getDocumentFrontImage(String customerId, ApiCallback callback) {
+        Request request = new Request.Builder()
+                .url(BASE_URL + "/customers/" + customerId + "/document/pages/front?width=600")
+                .get()
+                .addHeader("Authorization", "Bearer " + BEARER_TOKEN)
+                .build();
 
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                callback.onFailure(new IOException("Network error: " + e.getMessage()));
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try {
+                    if (!response.isSuccessful()) {
+                        throw new IOException("HTTP " + response.code() + ": " + response.body().string());
+                    }
+                    String responseBody = response.body().string();
+                    JSONObject jsonData = new JSONObject(responseBody);
+                    callback.onSuccess(jsonData);
+                } catch (Exception e) {
+                    callback.onFailure(e);
+                } finally {
+                    response.close();
+                }
+            }
+        });
+    }
+
+    public void uploadDocument(String customerId, String base64Image, ApiCallback callback) {
+        try {
+            // Créer le corps JSON de la requête
+            JSONObject requestBody = new JSONObject();
+            JSONObject imageObject = new JSONObject();
+            imageObject.put("data", base64Image);
+            requestBody.put("image", imageObject);
+
+            RequestBody body = RequestBody.create(
+                    requestBody.toString(),
+                    MediaType.parse("application/json; charset=utf-8")
+            );
+
+            // Construire la requête
+            Request request = new Request.Builder()
+                    .url(BASE_URL + "/customers/" + customerId + "/document/pages")
+                    .put(body)
+                    .addHeader("Authorization", "Bearer " + BEARER_TOKEN)
+                    .addHeader("Content-Type", "application/json")
+                    .build();
+
+            // Exécuter la requête de manière asynchrone
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    callback.onFailure(e);
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    try {
+                        if (response.isSuccessful()) {
+                            String responseData = response.body().string();
+                            JSONObject jsonResponse = new JSONObject(responseData);
+                            callback.onSuccess(jsonResponse);
+                        } else {
+                            callback.onFailure(new Exception("Upload failed: " + response.code() + " - " + response.message()));
+                        }
+                    } catch (Exception e) {
+                        callback.onFailure(e);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            callback.onFailure(e);
+        }
+    }
+
+    public void getFrontDocument(String customerId, int width, ApiCallback callback) {
+        try {
+            String fullUrl = BASE_URL + "/customers/" + customerId + "/document/pages/front?width=" + width;
+
+            // Log de l'URL et des infos
+            Log.d("API_DEBUG", "GET " + fullUrl);
+            Log.d("API_DEBUG", "Authorization: Bearer " + BEARER_TOKEN);
+
+            Request request = new Request.Builder()
+                    .url(fullUrl)
+                    .get()
+                    .addHeader("Authorization", "Bearer " + BEARER_TOKEN)
+                    .build();
+
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.e("API_DEBUG", "Request failed", e);
+                    callback.onFailure(e);
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    Log.d("API_DEBUG", "HTTP " + response.code() + " - " + response.message());
+
+                    try {
+                        String responseData = response.body().string();
+                        Log.d("API_DEBUG", "Response body: " + responseData);
+
+                        if (response.isSuccessful()) {
+                            JSONObject jsonResponse = new JSONObject(responseData);
+                            callback.onSuccess(jsonResponse);
+                        } else {
+                            callback.onFailure(new Exception("Request failed: " + response.code() + " - " + response.message()));
+                        }
+                    } catch (Exception e) {
+                        callback.onFailure(e);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            callback.onFailure(e);
+        }
+    }
+
+
+
+    public interface ApiCallback {
+        void onSuccess(JSONObject response);
+        void onFailure(Exception e);
+    }
 }

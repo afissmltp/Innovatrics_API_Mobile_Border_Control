@@ -2,6 +2,7 @@ package com.dynamsoft.documentscanner;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -12,7 +13,7 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.provider.MediaStore;
+import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
@@ -22,7 +23,14 @@ import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 
+import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,10 +54,23 @@ public class CroppingActivity extends AppCompatActivity {
     private int bitmapWidth;
     private int bitmapHeight;
     private int cornerWidth = (int) dp2px(15);
+    private String source;
+    private CustomerService customerService;
+    private String imageUriString;
+    private String customerId;
+
+    @SuppressLint("LongLogTag")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cropping);
+
+        source = getIntent().getStringExtra("SOURCE");
+        customerId = getIntent().getStringExtra("customerId");
+        imageUriString = getIntent().getStringExtra("imageUri");
+        customerService = new CustomerService();
+
+
         getSupportActionBar().hide();
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -61,13 +82,15 @@ public class CroppingActivity extends AppCompatActivity {
             onBackPressed();
         });
         okayButton = findViewById(R.id.okayButton);
+
         okayButton.setOnClickListener(v -> {
-            Intent intent = new Intent(this, ViewerActivity.class);
-            intent.putExtra("imageUri",getIntent().getStringExtra("imageUri"));
-            intent.putExtra("points",points);
-            intent.putExtra("bitmapWidth",bitmapWidth);
-            intent.putExtra("bitmapHeight",bitmapHeight);
-            startActivity(intent);
+                Intent intent = new Intent(CroppingActivity.this, ViewerActivity.class);
+                intent.putExtra("imageUri", imageUriString);
+                intent.putExtra("points", points);
+                intent.putExtra("bitmapWidth", bitmapWidth);
+                intent.putExtra("bitmapHeight", bitmapHeight);
+                intent.putExtra("customerId", customerId);
+                startActivity(intent);
         });
 
         corner1 = findViewById(R.id.corner1);
@@ -239,5 +262,52 @@ public class CroppingActivity extends AppCompatActivity {
 
     public float dp2px(float dp) {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, Resources.getSystem().getDisplayMetrics());
+    }
+
+    private void createDocumentFrontPage(Bitmap image) {
+        String imageBase64 = bitmapToBase64(image);
+        try {
+            JSONObject requestBody = new JSONObject();
+            JSONObject imageObject = new JSONObject();
+            imageObject.put("data", imageBase64);
+            requestBody.put("image", imageObject);
+
+            customerService.createDocumentFrontPage(customerId, requestBody, new CustomerService.ApiCallback() {
+                @Override
+                public void onSuccess(JSONObject response) {
+                    runOnUiThread(() -> {
+                        try {
+                            Toast.makeText(CroppingActivity.this,
+                                    "Document uploaded successfully",
+                                    Toast.LENGTH_LONG).show();
+                            Log.d("UPLOAD_SUCCESS", response.toString(2));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(CroppingActivity.this, "Erreur parsing JSON", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(CroppingActivity.this,
+                                "Upload error: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                        Log.e("UPLOAD_ERROR", "Upload failed", e);
+                    });
+                }
+            });
+        } catch (JSONException e) {
+            Toast.makeText(this, "Erreur JSON: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    private String bitmapToBase64(Bitmap bitmap) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+        byte[] byteArray = byteArrayOutputStream.toByteArray();
+        return Base64.encodeToString(byteArray, Base64.DEFAULT);
     }
 }

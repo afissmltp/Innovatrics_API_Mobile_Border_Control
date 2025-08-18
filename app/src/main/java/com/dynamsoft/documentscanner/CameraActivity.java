@@ -1,6 +1,7 @@
 package com.dynamsoft.documentscanner;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
@@ -20,9 +21,13 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Point;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
+import android.view.Display;
+import android.view.Window;
 import android.view.WindowManager;
 
 import com.dynamsoft.core.basic_structures.CapturedResult;
@@ -30,10 +35,11 @@ import com.dynamsoft.core.basic_structures.CapturedResultItem;
 import com.dynamsoft.cvr.CaptureVisionRouter;
 import com.dynamsoft.cvr.CaptureVisionRouterException;
 import com.dynamsoft.ddn.DetectedQuadResultItem;
+import com.dynamsoft.ddn.DocumentNormalizerException;
 import com.google.common.util.concurrent.ListenableFuture;
 
-
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -48,11 +54,14 @@ public class CameraActivity extends AppCompatActivity {
     private CaptureVisionRouter cvr;
     private ImageCapture imageCapture;
     private Boolean taken = false;
+    private String customerId;
     private ArrayList<DetectedQuadResultItem> previousResults = new ArrayList<DetectedQuadResultItem>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
+        customerId = getIntent().getStringExtra("customerId");
+
         getSupportActionBar().hide();
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -178,6 +187,7 @@ public class CameraActivity extends AppCompatActivity {
                         Log.d("DDN","saved");
                         Log.d("DDN",outputFileResults.getSavedUri().toString());
                         Intent intent = new Intent(CameraActivity.this, CroppingActivity.class);
+                        intent.putExtra("customerId", customerId);
                         intent.putExtra("imageUri",outputFileResults.getSavedUri().toString());
                         intent.putExtra("points",result.getLocation().points);
                         intent.putExtra("bitmapWidth",bitmapWidth);

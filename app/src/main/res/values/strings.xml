@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Document Scanner</string>
+    <string name="app_name">SMLTP Document Reader</string>
     <string name="title_activity_viewer">ViewerActivity</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
@@ -31,4 +31,8 @@
     <string name="button_ok">OK</string>
 
     <string name="pref_key_camera_live_viewport" translatable="false">clv</string>
+    <string name="label_name">Nom:</string>
+    <string name="label_surname">Prénom:</string>
+    <string name="label_gender">Genre:</string>
+    <string name="label_age">Âge:</string>
 </resources>

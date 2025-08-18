@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5"
-    tools:context=".ViewerActivity">
+    android:background="#F5F5F5">
 
+    <!-- Top bar avec Rotate et Read -->
     <LinearLayout
         android:id="@+id/topButtonBar"
         android:layout_width="0dp"
@@ -17,16 +18,16 @@
         android:paddingEnd="16dp"
         android:background="@android:color/white"
         android:elevation="4dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <Button
             android:id="@+id/rotateButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Rotate"
+            android:text="Faire pivoter"
             android:layout_marginEnd="8dp"/>
 
         <Button
@@ -34,29 +35,29 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Read"
+            android:text="Lire"
             android:layout_marginStart="8dp"/>
-
     </LinearLayout>
 
+    <!-- ImageView pour afficher le document -->
     <com.jsibbold.zoomage.ZoomageView
-        android:id="@+id/normalizedImageView"
+        android:id="@+id/documentImageView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:src="@drawable/ic_launcher_background"
-        app:layout_constraintBottom_toTopOf="@+id/qualityPanel"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:scaleType="fitCenter"
+        app:layout_constraintTop_toBottomOf="@id/topButtonBar"
+        app:layout_constraintBottom_toTopOf="@id/qualityPanel"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/topButtonBar"
-        app:zoomage_animateOnReset="true"
-        app:zoomage_autoCenter="true"
-        app:zoomage_autoResetMode="UNDER"
-        app:zoomage_maxScale="8"
-        app:zoomage_minScale="0.6"
-        app:zoomage_restrictBounds="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:zoomage_zoomable="true"
         app:zoomage_translatable="true"
-        app:zoomage_zoomable="true" />
+        app:zoomage_autoCenter="true"
+        app:zoomage_animateOnReset="true"
+        app:zoomage_maxScale="8"
+        app:zoomage_minScale="0.6"/>
 
+    <!-- Panel qualité document -->
     <androidx.cardview.widget.CardView
         android:id="@+id/qualityPanel"
         android:layout_width="0dp"
@@ -64,9 +65,9 @@
         android:layout_margin="16dp"
         app:cardElevation="8dp"
         app:cardCornerRadius="12dp"
-        app:layout_constraintBottom_toTopOf="@+id/bottomControlBar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintBottom_toTopOf="@id/bottomControlBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -103,15 +104,15 @@
                     android:id="@+id/sharpnessValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Not Available"
+                    android:text="N/A"
                     android:textStyle="bold"/>
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -121,15 +122,15 @@
                     android:id="@+id/brightnessValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Not Available"
+                    android:text="N/A"
                     android:textStyle="bold"/>
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -139,61 +140,45 @@
                     android:id="@+id/hotspotsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Not Available"
+                    android:text="N/A"
                     android:textStyle="bold"/>
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
+    <!-- Bottom bar -->
     <LinearLayout
         android:id="@+id/bottomControlBar"
-        android:layout_width="0dp"
-        android:layout_height="60dp"
-        android:orientation="horizontal"
-        android:gravity="end|center_vertical"
-        android:background="@android:color/white"
+        android:layout_width="419dp"
+        android:layout_height="43dp"
+        android:background="#673AB7"
         android:elevation="8dp"
+        android:gravity="end|center_vertical"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <ImageButton
+            android:id="@+id/selfieBtn"
+            android:layout_width="45dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="0dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="centerInside"
+            android:src="@drawable/facial_recognition" />
+
+        <ImageButton
             android:id="@+id/readNfcBtn"
             android:layout_width="45dp"
-            android:layout_height="45dp"
+            android:layout_height="32dp"
             android:layout_marginEnd="16dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:scaleType="centerInside"
-            android:src="@drawable/ic_nfc"
-            android:focusable="true"
-            android:clickable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            app:tint="@color/button_background_dark" />
+            android:src="@drawable/ic_nfc" />
     </LinearLayout>
-   <!-- <LinearLayout
-        android:id="@+id/bottomControlBar"
-        android:layout_width="0dp"
-        android:layout_height="75dp"
-        android:orientation="horizontal"
-        android:gravity="end|center_vertical"
-        android:background="@android:color/white"
-        android:elevation="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
 
-        &lt;!&ndash; Remplacement de ImageButton par MaterialButton avec icône &ndash;&gt;
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/readNfcBtn"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="70dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Lire la puce NFC"
-            app:icon="@drawable/ic_nfc"
-            app:iconTint="@color/button_background_dark" />
-    </LinearLayout>-->
-
+    <!-- ProgressBar -->
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleLarge"
@@ -201,19 +186,9 @@
         android:layout_height="wrap_content"
         android:indeterminateTint="@color/purple_app_bar"
         android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
-    <TextView
-        android:id="@+id/customerdata"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="68dp"
-        android:text="Customer Data: Loading..."
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/normalizedImageView" />
 </androidx.constraintlayout.widget.ConstraintLayout>

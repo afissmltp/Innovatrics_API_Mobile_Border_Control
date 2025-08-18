@@ -1,17 +1,14 @@
 package com.dynamsoft.documentscanner.ui;
 
-import static com.dynamsoft.documentscanner.ui.CaptureActivity.DOC_TYPE;
 import static com.dynamsoft.documentscanner.ui.CaptureActivity.MRZ_RESULT;
 import static org.jmrtd.PassportService.DEFAULT_MAX_BLOCKSIZE;
 import static org.jmrtd.PassportService.NORMAL_MAX_TRANCEIVE_LENGTH;
 
-import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
@@ -23,24 +20,22 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 
+import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
+import com.dynamsoft.documentscanner.CustomerDataActivity;
 import com.dynamsoft.documentscanner.R;
 import com.dynamsoft.documentscanner.model.AdditionalPersonDetails;
 import com.dynamsoft.documentscanner.model.DocType;
 import com.dynamsoft.documentscanner.model.EDocument;
 import com.dynamsoft.documentscanner.model.PersonDetails;
-import com.dynamsoft.documentscanner.util.AppUtil;
 import com.dynamsoft.documentscanner.util.DateUtil;
 import com.dynamsoft.documentscanner.util.Image;
 import com.dynamsoft.documentscanner.util.ImageUtil;
-import com.dynamsoft.documentscanner.util.PermissionUtil;
-import com.dynamsoft.documentscanner.model.DocType;
 import com.google.android.material.snackbar.Snackbar;
 
 import net.sf.scuba.smartcards.CardFileInputStream;
@@ -65,36 +60,41 @@ import org.jmrtd.lds.iso19794.FaceImageInfo;
 import org.jmrtd.lds.iso19794.FaceInfo;
 import org.jmrtd.lds.iso19794.FingerImageInfo;
 import org.jmrtd.lds.iso19794.FingerInfo;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class ReadNFCActivity extends AppCompatActivity {
 
-    private static final String TAG = MainActivity.class.getSimpleName();
-
+    private static final String TAG = ReadNFCActivity.class.getSimpleName();
     private static final int APP_CAMERA_ACTIVITY_REQUEST_CODE = 150;
-    private static final int APP_SETTINGS_ACTIVITY_REQUEST_CODE = 550;
 
     private NfcAdapter adapter;
 
     private View mainLayout;
     private View loadingLayout;
     private View imageLayout;
-    private Button scanIdCard, scanPassport, read;
     private TextView tvResult;
     private ImageView ivPhoto;
 
-    private String passportNumber, expirationDate , birthDate;
-    private com.dynamsoft.documentscanner.model.DocType docType;
+    private String passportNumber, expirationDate, birthDate;
+    private CustomerService customerService;
+    private String customerId;
+    private String mrzText = "N/A";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
+
+        customerService = new CustomerService();
+        customerId = getIntent().getStringExtra("customerId");
 
         getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
         getSupportActionBar().setCustomView(R.layout.action_bar_title);
@@ -104,12 +104,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         imageLayout = findViewById(R.id.image_layout);
         ivPhoto = findViewById(R.id.view_photo);
         tvResult = findViewById(R.id.text_result);
-        scanIdCard = findViewById(R.id.btn_scan_id_card);
-        scanIdCard.setOnClickListener(this);
-        scanPassport = findViewById(R.id.btn_scan_passport);
-        scanPassport.setOnClickListener(this);
-        read = findViewById(R.id.btn_read);
-        read.setOnClickListener(this);
 
         adapter = NfcAdapter.getDefaultAdapter(this);
         if (adapter == null) {
@@ -119,10 +113,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             finish();
             return;
         }
+
+        fetchCustomerData();
     }
 
     private void setMrzData(MRZInfo mrzInfo) {
-        adapter = NfcAdapter.getDefaultAdapter(this);
         mainLayout.setVisibility(View.GONE);
         imageLayout.setVisibility(View.VISIBLE);
 
@@ -131,78 +126,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         birthDate = mrzInfo.getDateOfBirth();
     }
 
-    private void readCard() {
-
-        String mrzData = "P<UTODOE<<JOHN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" +
-                         "DE00001491UTO9101106M2606200<<<<<<<<<<<<<<02";
-
-
-        MRZInfo mrzInfo = new MRZInfo(mrzData);
-        setMrzData(mrzInfo);
-    }
-
-    private void openCameraActivity() {
-        Intent intent = new Intent(this, CaptureActivity.class);
-        intent.putExtra(DOC_TYPE, docType);
-        startActivityForResult(intent, APP_CAMERA_ACTIVITY_REQUEST_CODE);
-    }
-
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == Activity.RESULT_OK) {
-            switch (requestCode) {
-                case APP_CAMERA_ACTIVITY_REQUEST_CODE:
-                    MRZInfo mrzInfo = (MRZInfo) data.getSerializableExtra(MRZ_RESULT);
-                    if(mrzInfo != null) {
-                        setMrzData(mrzInfo);
-                    } else {
-                        Snackbar.make(loadingLayout, R.string.error_input, Snackbar.LENGTH_SHORT).show();
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.btn_scan_id_card:
-                docType = DocType.ID_CARD;
-                requestPermissionForCamera();
-                break;
-            case R.id.btn_scan_passport:
-                docType = DocType.PASSPORT;
-                requestPermissionForCamera();
-                break;
-            case R.id.btn_read:
-                readCard();
-                break;
-            default:
-                break;
-        }
-    }
-
-   @Override
     protected void onResume() {
         super.onResume();
 
-        if (adapter != null) {
-            Intent intent = new Intent(getApplicationContext(), this.getClass());
-            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-            String[][] filter = new String[][]{new String[]{"android.nfc.tech.IsoDep"}};
-            adapter.enableForegroundDispatch(this, pendingIntent, null, filter);
+        adapter = NfcAdapter.getDefaultAdapter(this);
+        if (adapter == null) {
+            Toast.makeText(this, "NFC non supporté sur cet appareil", Toast.LENGTH_LONG).show();
+            return;
         }
 
+        if (!adapter.isEnabled()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Activer NFC")
+                    .setMessage("Veuillez activer le NFC pour lire les documents.")
+                    .setPositiveButton("Paramètres", (dialog, which) -> {
+                        startActivity(new Intent(Settings.ACTION_NFC_SETTINGS));
+                    })
+                    .setNegativeButton("Annuler", null)
+                    .show();
+            return;
+        }
+
+        Intent intent = new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
+        String[][] techList = new String[][]{ new String[] { "android.nfc.tech.IsoDep" } };
+        adapter.enableForegroundDispatch(this, pendingIntent, null, techList);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-
         if (adapter != null) {
             adapter.disableForegroundDispatch(this);
         }
@@ -212,17 +166,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         if (NfcAdapter.ACTION_TECH_DISCOVERED.equals(intent.getAction())) {
-            Tag tag = intent.getExtras().getParcelable(NfcAdapter.EXTRA_TAG);
-            if (Arrays.asList(tag.getTechList()).contains("android.nfc.tech.IsoDep")) {
+            Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+            if (tag != null && Arrays.asList(tag.getTechList()).contains("android.nfc.tech.IsoDep")) {
+
                 clearViews();
+
+                // Utiliser automatiquement le MRZ
+                MRZInfo mrzInfo = new MRZInfo(mrzText);
+                setMrzData(mrzInfo);
+
                 if (passportNumber != null && !passportNumber.isEmpty()
                         && expirationDate != null && !expirationDate.isEmpty()
                         && birthDate != null && !birthDate.isEmpty()) {
+
                     BACKeySpec bacKey = new BACKey(passportNumber, birthDate, expirationDate);
                     new ReadTask(IsoDep.get(tag), bacKey).execute();
+
                     mainLayout.setVisibility(View.GONE);
                     imageLayout.setVisibility(View.GONE);
                     loadingLayout.setVisibility(View.VISIBLE);
+
                 } else {
                     Snackbar.make(loadingLayout, R.string.error_input, Snackbar.LENGTH_SHORT).show();
                 }
@@ -247,7 +210,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         protected Exception doInBackground(Void... params) {
-
             try {
                 CardService cardService = CardService.getInstance(isoDep);
                 cardService.open();
@@ -271,7 +233,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
 
                 service.sendSelectApplet(paceSucceeded);
-
                 if (!paceSucceeded) {
                     try {
                         service.getInputStream(PassportService.EF_COM).read();
@@ -280,7 +241,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 }
 
-                // -- Personal Details -- //
+                // Lecture DG1
                 CardFileInputStream dg1In = service.getInputStream(PassportService.EF_DG1);
                 DG1File dg1File = new DG1File(dg1In);
 
@@ -295,13 +256,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 personDetails.setNationality(mrzInfo.getNationality());
                 personDetails.setIssuerAuthority(mrzInfo.getIssuingState());
 
-                if("I".equals(mrzInfo.getDocumentCode())) {
+                if ("I".equals(mrzInfo.getDocumentCode())) {
                     docType = DocType.ID_CARD;
-                } else if("P".equals(mrzInfo.getDocumentCode())) {
+                } else if ("P".equals(mrzInfo.getDocumentCode())) {
                     docType = DocType.PASSPORT;
                 }
 
-                // -- Face Image -- //
+                // Lecture DG2 : Photo
                 CardFileInputStream dg2In = service.getInputStream(PassportService.EF_DG2);
                 DG2File dg2File = new DG2File(dg2In);
 
@@ -313,12 +274,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 if (!allFaceImageInfos.isEmpty()) {
                     FaceImageInfo faceImageInfo = allFaceImageInfos.iterator().next();
-                    Image image = ImageUtil.getImage(MainActivity.this, faceImageInfo);
+                    Image image = ImageUtil.getImage(ReadNFCActivity.this, faceImageInfo);
                     personDetails.setFaceImage(image.getBitmapImage());
                     personDetails.setFaceImageBase64(image.getBase64Image());
                 }
 
-                // -- Fingerprint (if exist)-- //
+                // Lecture DG3 : Empreintes
                 try {
                     CardFileInputStream dg3In = service.getInputStream(PassportService.EF_DG3);
                     DG3File dg3File = new DG3File(dg3In);
@@ -330,22 +291,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
 
                     List<Bitmap> fingerprintsImage = new ArrayList<>();
-
-                    if (!allFingerImageInfos.isEmpty()) {
-
-                        for(FingerImageInfo fingerImageInfo : allFingerImageInfos) {
-                            Image image = ImageUtil.getImage(MainActivity.this, fingerImageInfo);
-                            fingerprintsImage.add(image.getBitmapImage());
-                        }
-
-                        personDetails.setFingerprints(fingerprintsImage);
-
+                    for (FingerImageInfo fingerImageInfo : allFingerImageInfos) {
+                        Image image = ImageUtil.getImage(ReadNFCActivity.this, fingerImageInfo);
+                        fingerprintsImage.add(image.getBitmapImage());
                     }
+                    personDetails.setFingerprints(fingerprintsImage);
+
                 } catch (Exception e) {
                     Log.w(TAG, e);
                 }
 
-                // -- Portrait Picture -- //
+                // Lecture DG5 : Portrait
                 try {
                     CardFileInputStream dg5In = service.getInputStream(PassportService.EF_DG5);
                     DG5File dg5File = new DG5File(dg5In);
@@ -353,7 +309,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     List<DisplayedImageInfo> displayedImageInfos = dg5File.getImages();
                     if (!displayedImageInfos.isEmpty()) {
                         DisplayedImageInfo displayedImageInfo = displayedImageInfos.iterator().next();
-                        Image image = ImageUtil.getImage(MainActivity.this, displayedImageInfo);
+                        Image image = ImageUtil.getImage(ReadNFCActivity.this, displayedImageInfo);
                         personDetails.setPortraitImage(image.getBitmapImage());
                         personDetails.setPortraitImageBase64(image.getBase64Image());
                     }
@@ -361,7 +317,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Log.w(TAG, e);
                 }
 
-                // -- Signature (if exist) -- //
+                // Lecture DG7 : Signature
                 try {
                     CardFileInputStream dg7In = service.getInputStream(PassportService.EF_DG7);
                     DG7File dg7File = new DG7File(dg7In);
@@ -369,7 +325,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     List<DisplayedImageInfo> signatureImageInfos = dg7File.getImages();
                     if (!signatureImageInfos.isEmpty()) {
                         DisplayedImageInfo displayedImageInfo = signatureImageInfos.iterator().next();
-                        Image image = ImageUtil.getImage(MainActivity.this, displayedImageInfo);
+                        Image image = ImageUtil.getImage(ReadNFCActivity.this, displayedImageInfo);
                         personDetails.setPortraitImage(image.getBitmapImage());
                         personDetails.setPortraitImageBase64(image.getBase64Image());
                     }
@@ -378,33 +334,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Log.w(TAG, e);
                 }
 
-                // -- Additional Details (if exist) -- //
+                // Lecture DG11 : Infos additionnelles
                 try {
                     CardFileInputStream dg11In = service.getInputStream(PassportService.EF_DG11);
                     DG11File dg11File = new DG11File(dg11In);
 
                     if(dg11File.getLength() > 0) {
-                        additionalPersonDetails.setCustodyInformation(dg11File.getCustodyInformation());
-                        additionalPersonDetails.setNameOfHolder(dg11File.getNameOfHolder());
-                        additionalPersonDetails.setFullDateOfBirth(dg11File.getFullDateOfBirth());
-                        additionalPersonDetails.setOtherNames(dg11File.getOtherNames());
-                        additionalPersonDetails.setOtherValidTDNumbers(dg11File.getOtherValidTDNumbers());
-                        additionalPersonDetails.setPermanentAddress(dg11File.getPermanentAddress());
-                        additionalPersonDetails.setPersonalNumber(dg11File.getPersonalNumber());
-                        additionalPersonDetails.setPersonalSummary(dg11File.getPersonalSummary());
-                        additionalPersonDetails.setPlaceOfBirth(dg11File.getPlaceOfBirth());
-                        additionalPersonDetails.setProfession(dg11File.getProfession());
-                        additionalPersonDetails.setProofOfCitizenship(dg11File.getProofOfCitizenship());
-                        additionalPersonDetails.setTag(dg11File.getTag());
-                        additionalPersonDetails.setTagPresenceList(dg11File.getTagPresenceList());
-                        additionalPersonDetails.setTelephone(dg11File.getTelephone());
-                        additionalPersonDetails.setTitle(dg11File.getTitle());
+                        AdditionalPersonDetails addDetails = additionalPersonDetails;
+                        addDetails.setCustodyInformation(dg11File.getCustodyInformation());
+                        addDetails.setNameOfHolder(dg11File.getNameOfHolder());
+                        addDetails.setFullDateOfBirth(dg11File.getFullDateOfBirth());
+                        addDetails.setOtherNames(dg11File.getOtherNames());
+                        addDetails.setOtherValidTDNumbers(dg11File.getOtherValidTDNumbers());
+                        addDetails.setPermanentAddress(dg11File.getPermanentAddress());
+                        addDetails.setPersonalNumber(dg11File.getPersonalNumber());
+                        addDetails.setPersonalSummary(dg11File.getPersonalSummary());
+                        addDetails.setPlaceOfBirth(dg11File.getPlaceOfBirth());
+                        addDetails.setProfession(dg11File.getProfession());
+                        addDetails.setProofOfCitizenship(dg11File.getProofOfCitizenship());
+                        addDetails.setTag(dg11File.getTag());
+                        addDetails.setTagPresenceList(dg11File.getTagPresenceList());
+                        addDetails.setTelephone(dg11File.getTelephone());
+                        addDetails.setTitle(dg11File.getTitle());
                     }
                 } catch (Exception e) {
                     Log.w(TAG, e);
                 }
 
-                // -- Document Public Key -- //
+                // Lecture DG15 : Clé publique
                 try {
                     CardFileInputStream dg15In = service.getInputStream(PassportService.EF_DG15);
                     DG15File dg15File = new DG15File(dg15In);
@@ -435,27 +392,59 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Snackbar.make(mainLayout, exception.getLocalizedMessage(), Snackbar.LENGTH_LONG).show();
             }
         }
-
     }
 
     private void setResultToView(EDocument eDocument) {
+        // Préparer l'image
+        Bitmap faceImage = ImageUtil.scaleImage(eDocument.getPersonDetails().getFaceImage());
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        faceImage.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        byte[] faceImageBytes = stream.toByteArray();
 
-        Bitmap image = ImageUtil.scaleImage(eDocument.getPersonDetails().getFaceImage());
+        // Ouvrir CustomerDataActivity et passer les données
+        openCustomerDataActivity(
+                faceImageBytes,
+                eDocument.getPersonDetails().getName(),
+                eDocument.getPersonDetails().getSurname(),
+                eDocument.getPersonDetails().getPersonalNumber(),
+                eDocument.getPersonDetails().getGender(),
+                eDocument.getPersonDetails().getBirthDate(),
+                eDocument.getPersonDetails().getExpiryDate(),
+                eDocument.getPersonDetails().getSerialNumber(),
+                eDocument.getPersonDetails().getNationality(),
+                eDocument.getDocType().name(),
+                eDocument.getPersonDetails().getIssuerAuthority()
+        );
+    }
+    private void openCustomerDataActivity(byte[] faceImageBytes,
+                                          String name,
+                                          String surname,
+                                          String personalNumber,
+                                          String gender,
+                                          String birthDate,
+                                          String expiryDate,
+                                          String serialNumber,
+                                          String nationality,
+                                          String docType,
+                                          String issuerAuthority) {
+        Intent intent = new Intent(this, CustomerDataActivity.class);
+        intent.putExtra("customerId", customerId);
+        intent.putExtra("faceImage", faceImageBytes);
 
-        ivPhoto.setImageBitmap(image);
+        // Ajouter chaque champ individuellement
+        intent.putExtra("name", name);
+        intent.putExtra("surname", surname);
+        intent.putExtra("personalNumber", personalNumber);
+        intent.putExtra("gender", gender);
+        intent.putExtra("birthDate", birthDate);
+        intent.putExtra("expiryDate", expiryDate);
+        intent.putExtra("serialNumber", serialNumber);
+        intent.putExtra("nationality", nationality);
+        intent.putExtra("docType", docType);
+        intent.putExtra("issuerAuthority", issuerAuthority);
 
-        String result  = "NAME: " + eDocument.getPersonDetails().getName() + "\n";
-        result += "SURNAME: " + eDocument.getPersonDetails().getSurname() + "\n";
-        result += "PERSONAL NUMBER: " + eDocument.getPersonDetails().getPersonalNumber() + "\n";
-        result += "GENDER: " + eDocument.getPersonDetails().getGender() + "\n";
-        result += "BIRTH DATE: " + eDocument.getPersonDetails().getBirthDate() + "\n";
-        result += "EXPIRY DATE: " + eDocument.getPersonDetails().getExpiryDate() + "\n";
-        result += "SERIAL NUMBER: " + eDocument.getPersonDetails().getSerialNumber() + "\n";
-        result += "NATIONALITY: " + eDocument.getPersonDetails().getNationality() + "\n";
-        result += "DOC TYPE: " + eDocument.getDocType().name() + "\n";
-        result += "ISSUER AUTHORITY: " + eDocument.getPersonDetails().getIssuerAuthority() + "\n";
-
-        tvResult.setText(result);
+        intent.putExtra("openFragmentIndex", 3); // index 3 = 4ème fragment
+        startActivity(intent);
     }
 
     private void clearViews() {
@@ -463,36 +452,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tvResult.setText("");
     }
 
-    private void requestPermissionForCamera() {
-        String[] permissions = { Manifest.permission.CAMERA };
-        boolean isPermissionGranted = PermissionUtil.hasPermissions(this, permissions);
-
-        if (!isPermissionGranted) {
-            AppUtil.showAlertDialog(this, getString(R.string.permission_title), getString(R.string.permission_description), getString(R.string.button_ok), false, (dialogInterface, i) -> ActivityCompat.requestPermissions(this, permissions, PermissionUtil.REQUEST_CODE_MULTIPLE_PERMISSIONS));
-        } else {
-            openCameraActivity();
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == PermissionUtil.REQUEST_CODE_MULTIPLE_PERMISSIONS) {
-            int result = grantResults[0];
-            if (result == PackageManager.PERMISSION_DENIED) {
-                if (!PermissionUtil.showRationale(this, permissions[0])) {
-                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                    Uri uri = Uri.fromParts("package", getPackageName(), null);
-                    intent.setData(uri);
-                    startActivityForResult(intent, APP_SETTINGS_ACTIVITY_REQUEST_CODE);
-                } else {
-                    requestPermissionForCamera();
-                }
-            } else if (result == PackageManager.PERMISSION_GRANTED) {
-                openCameraActivity();
+    private void fetchCustomerData() {
+        customerService.getCustomer(customerId, new CustomerService.ApiCallback() {
+            @Override
+            public void onSuccess(JSONObject response) {
+                runOnUiThread(() -> {
+                    Log.d(TAG, "Customer data fetched: " + response.toString());
+                    Toast.makeText(ReadNFCActivity.this, "Customer data loaded.", Toast.LENGTH_SHORT).show();
+                    displayMRZ(response);
+                });
             }
-        }
+
+            @Override
+            public void onFailure(Exception e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(ReadNFCActivity.this,
+                            "Error fetching customer data: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Failed to fetch customer data", e);
+                });
+            }
+        });
     }
 
+    private void displayMRZ(JSONObject customerData) {
+        try {
+            JSONObject customer = customerData.getJSONObject("customer");
+            JSONObject document = customer.getJSONObject("document");
+
+            JSONObject additionalTexts = document.optJSONObject("additionalTexts");
+            if (additionalTexts != null) {
+                JSONObject machineReadableZone = additionalTexts.optJSONObject("machineReadableZone");
+                if (machineReadableZone != null && machineReadableZone.has("visualZone")) {
+                    mrzText = machineReadableZone.getString("visualZone");
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error extracting data from JSON", Toast.LENGTH_SHORT).show();
+        }
+    }
 }

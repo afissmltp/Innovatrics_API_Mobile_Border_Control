@@ -22,6 +22,7 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+
     <application
         android:name=".MainApplication"
         android:allowBackup="true"
@@ -31,8 +32,7 @@
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.DocumentScanner"
-        android:usesCleartextTraffic="true">
+        android:theme="@style/Theme.DocumentScanner">
         <!-- For Android 10+ storage compatibility -->
         <activity
             android:name=".ViewerActivity"
@@ -48,27 +48,52 @@
             android:name=".CameraActivity"
             android:exported="false" />
         <activity
-            android:name=".MatchingFaceActivity"
+            android:name=".CameraActivity2"
             android:exported="false" />
 
         <activity
-            android:name=".FaceCameraActivity"
+            android:name=".DisplayActivity"
             android:exported="false" />
-        <activity android:name=".ui.CaptureActivity" />
+        <activity
+            android:name=".DisplayNFCDataActivity"
+            android:exported="false" />
+        <activity
+            android:name=".NFCcameraActivity"
+            android:exported="false" />
 
         <activity
-            android:name=".ui.MainActivity"
-            android:launchMode="singleTop"
-            android:exported="true">
+            android:name=".ui.ReadNFCActivity"
+            android:exported="false"
+            android:screenOrientation="portrait">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="com.tananaev.passportreader.REQUEST" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <meta-data
                 android:name="android.nfc.action.TECH_DISCOVERED"
                 android:resource="@xml/nfc_tech_filter" />
         </activity>
-    </application>
+        <activity
+        android:name=".ui.CaptureActivity" />
 
+        <activity
+            android:name=".HomeActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
 </manifest>

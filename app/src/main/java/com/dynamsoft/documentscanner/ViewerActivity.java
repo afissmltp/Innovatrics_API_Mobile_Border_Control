@@ -19,6 +19,7 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,6 +31,7 @@ import com.dynamsoft.cvr.CaptureVisionRouterException;
 import com.dynamsoft.cvr.SimplifiedCaptureVisionSettings;
 import com.dynamsoft.ddn.NormalizedImageResultItem;
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
+import com.dynamsoft.documentscanner.ui.ReadNFCActivity;
 import com.jsibbold.zoomage.ZoomageView;
 
 import org.json.JSONException;
@@ -49,12 +51,10 @@ public class ViewerActivity extends AppCompatActivity {
     private Bitmap normalized;
     private CaptureVisionRouter cvr;
     private int rotation = 0;
-
-    private static final String[] WRITE_EXTERNAL_STORAGE_PERMISSION = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE};
-    private static final int WRITE_EXTERNAL_STORAGE_REQUEST_CODE = 10;
     private CustomerService customerService;
     private String customerId;
     private Button readDocBtn;
+    private Button rotateButton;
     private ProgressBar progressBar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +65,7 @@ public class ViewerActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         readDocBtn = findViewById(R.id.readDocBtn);
         readDocBtn.setEnabled(false); // Disable until quality checked
-
+        ImageButton nfcButton = findViewById(R.id.readNfcBtn);
         customerId = getIntent().getStringExtra("customerId");
 
         if (customerId == null || customerId.isEmpty()) {
@@ -83,8 +83,8 @@ public class ViewerActivity extends AppCompatActivity {
             Log.d("ViewerActivity", "Customer ID retrieved from Intent: " + customerId);
         }
 
-        Button rotateButton = findViewById(R.id.rotateButton);
-        Button saveImageButton = findViewById(R.id.saveImageButton);
+        rotateButton = findViewById(R.id.rotateButton);
+        //Button saveImageButton = findViewById(R.id.saveImageButton);
 
         rotateButton.setOnClickListener(v -> {
             rotation = rotation + 90;
@@ -92,14 +92,6 @@ public class ViewerActivity extends AppCompatActivity {
                 rotation = 0;
             }
             normalizedImageView.setRotation(rotation);
-        });
-
-        saveImageButton.setOnClickListener(v -> {
-            if (hasStoragePermission()) {
-                saveImage(normalized);
-            } else {
-                requestPermission();
-            }
         });
 
         normalizedImageView = findViewById(R.id.normalizedImageView);
@@ -127,61 +119,26 @@ public class ViewerActivity extends AppCompatActivity {
                 Toast.makeText(this, "Document not processed .", Toast.LENGTH_SHORT).show();
             }
         });
-    }
 
-    /**
-     * Fetches the quality analysis of the document front page from the API.
-     * After fetching quality, it fetches customer data.
-     */
-    private void getDocQuality() {
-        customerService.getQualityDocumentFrontPage(customerId, new CustomerService.ApiCallback() {
+        nfcButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onSuccess(JSONObject jsonData) {
-                runOnUiThread(() -> {
-                    try {
-                        boolean isFine = jsonData.getBoolean("fine");
-                        JSONObject details = jsonData.getJSONObject("details");
+            public void onClick(View v) {
+                // Création de l'Intent pour la nouvelle Activity
+                Intent intent = new Intent(ViewerActivity.this, ReadNFCActivity.class);
 
-                        JSONObject sharpness = details.getJSONObject("sharpness");
-                        double sharpnessScore = sharpness.getDouble("score");
-                        String sharpnessLevel = sharpness.getString("level");
+                // Ajout d'extras si nécessaire
+                //intent.putExtra("key", "value");
 
-                        JSONObject brightness = details.getJSONObject("brightness");
-                        double brightnessScore = brightness.getDouble("score");
-                        String brightnessLevel = brightness.getString("level");
+                // Lancement de l'Activity
+                startActivity(intent);
 
-                        JSONObject hotspots = details.getJSONObject("hotspots");
-                        double hotspotsScore = hotspots.getDouble("score");
-                        String hotspotsLevel = hotspots.getString("level");
-
-                        Log.d("QualityResult", "Document is fine: " + isFine);
-                        Log.d("QualityResult", "Sharpness - Score: " + sharpnessScore + ", Level: " + sharpnessLevel);
-                        Log.d("QualityResult", "Brightness - Score: " + brightnessScore + ", Level: " + brightnessLevel);
-                        Log.d("QualityResult", "Hotspots - Score: " + hotspotsScore + ", Level: " + hotspotsLevel);
-
-                        updateQualityUI(isFine, sharpnessScore, sharpnessLevel,
-                                brightnessScore, brightnessLevel,
-                                hotspotsScore, hotspotsLevel);
-
-                        readDocBtn.setEnabled(true); // Enable button on success
-
-                    } catch (JSONException e) {
-                        Log.e("QualityError", "Error parsing JSON for quality data", e);
-                        showError("Error parsing quality data");
-
-                    }
-                });
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                runOnUiThread(() -> {
-                    Log.e("QualityError", "API call failed for quality data", e);
-                    showError("Failed to get quality data: " + e.getMessage());
-                });
+                // Animation de transition (optionnelle)
+                //overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             }
         });
     }
+
+
 
     /**
      * Updates the UI to display the document quality metrics.
@@ -240,7 +197,8 @@ public class ViewerActivity extends AppCompatActivity {
     /**
      * Loads the raw image and corner points from the Intent.
      */
-    private void loadImageAndPoints() {
+    private void loadImageAndPoints
+    () {
         Uri uri = Uri.parse(getIntent().getStringExtra("imageUri"));
         try {
             rawImage = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
@@ -299,82 +257,14 @@ public class ViewerActivity extends AppCompatActivity {
     }
 
     /**
-     * Saves the given bitmap to external storage.
-     */
-    public void saveImage(Bitmap bmp) {
-        if (bmp == null) {
-            Toast.makeText(this, "No image to save.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        File appDir = new File(this.getApplicationContext().getExternalFilesDir(""), "ddn");
-        if (!appDir.exists()) {
-            appDir.mkdir();
-        }
-        String fileName = System.currentTimeMillis() + ".jpg";
-        File file = new File(appDir, fileName);
-        try {
-            FileOutputStream fos = new FileOutputStream(file);
-            if (rotation != 0) {
-                Matrix matrix = new Matrix();
-                matrix.setRotate(rotation);
-                Bitmap rotated = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, false);
-                rotated.compress(Bitmap.CompressFormat.JPEG, 100, fos);
-            } else {
-                bmp.compress(Bitmap.CompressFormat.JPEG, 100, fos);
-            }
-            fos.flush();
-            fos.close();
-            Toast.makeText(ViewerActivity.this, "File saved to " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Error saving file: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Error saving file: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
-    }
-
-    /**
-     * Checks if the app has WRITE_EXTERNAL_STORAGE permission.
-     */
-    private boolean hasStoragePermission() {
-        return ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-        ) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    /**
-     * Requests WRITE_EXTERNAL_STORAGE permission from the user.
-     */
-    private void requestPermission() {
-        ActivityCompat.requestPermissions(
-                this,
-                WRITE_EXTERNAL_STORAGE_PERMISSION,
-                WRITE_EXTERNAL_STORAGE_REQUEST_CODE
-        );
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                                           int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == WRITE_EXTERNAL_STORAGE_REQUEST_CODE) {
-            if (grantResults.length > 0 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                saveImage(normalized);
-            } else {
-                Toast.makeText(this, "Please grant the permission to write external storage.", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    /**
      * Uploads the normalized document image to the backend.
      * After successful upload, it fetches document quality.
      */
     private void createDocumentFrontPage() {
+        showProgress(); // Affiche la ProgressBar
+
         if (normalized == null) {
+            hideProgress();
             Toast.makeText(this, "Normalized image not available for upload.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -401,12 +291,12 @@ public class ViewerActivity extends AppCompatActivity {
                                     Toast.LENGTH_LONG).show();
                             Log.d("UPLOAD_SUCCESS", response.toString(2));
                             // After successful document creation, call getDocQuality
-                            getDocQuality();
+                            getDocQuality(customerId);
                         } catch (JSONException e) {
                             e.printStackTrace();
                             Toast.makeText(ViewerActivity.this, "Error parsing upload response.", Toast.LENGTH_SHORT).show();
                             // Even if parsing fails, try to get quality and customer data
-                            getDocQuality();
+                            getDocQuality(customerId);
                         }
                     });
                 }
@@ -426,6 +316,63 @@ public class ViewerActivity extends AppCompatActivity {
             Toast.makeText(this, "Error creating request: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
+    /**
+     * Fetches the quality analysis of the document front page from the API.
+     * After fetching quality, it fetches customer data.
+     */
+    private void getDocQuality(String customerId) {
+        showProgress(); // Affiche la ProgressBar
+
+        customerService.getQualityDocumentFrontPage(customerId, new CustomerService.ApiCallback() {
+            @Override
+            public void onSuccess(JSONObject jsonData) {
+                hideProgress(); // Cache la ProgressBar quand c'est fini
+                runOnUiThread(() -> {
+                    try {
+                        boolean isFine = jsonData.getBoolean("fine");
+                        JSONObject details = jsonData.getJSONObject("details");
+
+                        JSONObject sharpness = details.getJSONObject("sharpness");
+                        double sharpnessScore = sharpness.getDouble("score");
+                        String sharpnessLevel = sharpness.getString("level");
+
+                        JSONObject brightness = details.getJSONObject("brightness");
+                        double brightnessScore = brightness.getDouble("score");
+                        String brightnessLevel = brightness.getString("level");
+
+                        JSONObject hotspots = details.getJSONObject("hotspots");
+                        double hotspotsScore = hotspots.getDouble("score");
+                        String hotspotsLevel = hotspots.getString("level");
+
+                        Log.d("QualityResult", "Document is fine: " + isFine);
+                        Log.d("QualityResult", "Sharpness - Score: " + sharpnessScore + ", Level: " + sharpnessLevel);
+                        Log.d("QualityResult", "Brightness - Score: " + brightnessScore + ", Level: " + brightnessLevel);
+                        Log.d("QualityResult", "Hotspots - Score: " + hotspotsScore + ", Level: " + hotspotsLevel);
+
+                        updateQualityUI(isFine, sharpnessScore, sharpnessLevel,
+                                brightnessScore, brightnessLevel,
+                                hotspotsScore, hotspotsLevel);
+
+                        readDocBtn.setEnabled(true); // Enable button on success
+
+                    } catch (JSONException e) {
+                        Log.e("QualityError", "Error parsing JSON for quality data", e);
+                        showError("Error parsing quality data");
+
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                hideProgress(); // Cache la ProgressBar quand c'est fini
+                runOnUiThread(() -> {
+                    Log.e("QualityError", "API call failed for quality data", e);
+                    showError("Failed to get quality data: " + e.getMessage());
+                });
+            }
+        });
+    }
 
     /**
      * Converts a Bitmap to a Base64 encoded String.
@@ -435,5 +382,24 @@ public class ViewerActivity extends AppCompatActivity {
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
         byte[] byteArray = byteArrayOutputStream.toByteArray();
         return Base64.encodeToString(byteArray, Base64.DEFAULT);
+    }
+
+    private void showProgress() {
+        runOnUiThread(() -> {
+            progressBar.setVisibility(View.VISIBLE);
+            normalizedImageView.setAlpha(0.5f); // Assombrit l'image de fond
+            readDocBtn.setEnabled(false); // Désactive les boutons pendant le chargement
+            rotateButton.setEnabled(false);
+
+        });
+    }
+
+    private void hideProgress() {
+        runOnUiThread(() -> {
+            progressBar.setVisibility(View.GONE);
+            normalizedImageView.setAlpha(1f); // Rétablit l'opacité normale
+            readDocBtn.setEnabled(true);
+            rotateButton.setEnabled(true);
+        });
     }
 }
