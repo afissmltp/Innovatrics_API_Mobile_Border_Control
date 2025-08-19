@@ -5,9 +5,12 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
@@ -28,82 +32,77 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 
 public class Page3Fragment extends Fragment {
-    private static final int REQUEST_IMAGE_CAPTURE = 1;
-    private static final int PERMISSION_REQUEST_CAMERA = 100;
-
-    private ImageView portraitImageView, selfieImageView;
+    private static final String TAG = "Page3Fragment";
+    private ImageView portraitImageView, selfieImageView, rfidImageView,selfieImageView2;
     private TextView similarityScoreTextView;
-    private Button openCamButton;
+    private byte[] faceImageBytes;
+    private String customerId;
 
+    public static Page3Fragment newInstance(String customerId, byte[] faceImageBytes) {
+        Page3Fragment fragment = new Page3Fragment();
+        Bundle args = new Bundle();
+        args.putString("customerId", customerId);
+        args.putByteArray("faceImage", faceImageBytes);
+        fragment.setArguments(args);
+        return fragment;
+    }
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            customerId = getArguments().getString("customerId");
+            faceImageBytes = getArguments().getByteArray("faceImage");
+        }
+    }
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_page3, container, false);
 
-        // Initialize views
         portraitImageView = view.findViewById(R.id.portraitImageView);
         selfieImageView = view.findViewById(R.id.imageView2);
+        selfieImageView2 = view.findViewById(R.id.selfieIMG);
         similarityScoreTextView = view.findViewById(R.id.tvSimilarityScore);
-        openCamButton = view.findViewById(R.id.openCambtn);
+        rfidImageView = view.findViewById(R.id.rfidImageView); // ajoutez le nouveau
 
-        // Set portrait image if available
+        if (faceImageBytes != null) {
+            Bitmap faceBitmap = BitmapFactory.decodeByteArray(faceImageBytes, 0, faceImageBytes.length);
+            rfidImageView.setImageBitmap(faceBitmap);
+        }
+        // Afficher portrait et selfie existants
         if (CustomerDataActivity.portraitBitmap != null) {
             portraitImageView.setImageBitmap(CustomerDataActivity.portraitBitmap);
         }
         if (CustomerDataActivity.selfieBitmap != null) {
             selfieImageView.setImageBitmap(CustomerDataActivity.selfieBitmap);
+            selfieImageView2.setImageBitmap(CustomerDataActivity.selfieBitmap);
+
         }
         if (CustomerDataActivity.similarityScore != null) {
-            String scoreText = String.format("Similarity Score: %.1f%%",
-                    CustomerDataActivity.similarityScore * 100);
-            similarityScoreTextView.setText(scoreText);
+            updateSimilarityScoreText(CustomerDataActivity.similarityScore);
         }
-        // Set click listener for camera button
-        openCamButton.setOnClickListener(v -> checkCameraPermission());
 
         return view;
     }
 
-    private void checkCameraPermission() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.CAMERA}, PERMISSION_REQUEST_CAMERA);
-        } else {
-            launchCamera();
-        }
-    }
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == PERMISSION_REQUEST_CAMERA) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                launchCamera();
-            } else {
-                Toast.makeText(requireContext(), "Camera permission is required", Toast.LENGTH_SHORT).show();
+    /**
+     * Méthode appelée par CustomerDataActivity pour rafraîchir le selfie et lancer l'upload.
+     */
+    public void refreshSelfieAndUpload(Bitmap selfie) {
+        if (selfie != null) {
+            CustomerDataActivity.selfieBitmap = selfie;
+            if (selfieImageView != null) {
+                selfieImageView.setImageBitmap(selfie);
+                selfieImageView2.setImageBitmap(selfie);
             }
+            uploadSelfieToServer(selfie);
         }
     }
-    private void launchCamera() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
-            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
-        }
-    }
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
-            Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap) extras.get("data");
-            CustomerDataActivity.selfieBitmap = imageBitmap;
-            if (imageBitmap != null) {
-                selfieImageView.setImageBitmap(imageBitmap);
-                uploadSelfieToServer(imageBitmap);
-            }
-        }
-    }
+
     private void uploadSelfieToServer(Bitmap bitmap) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
         byte[] byteArray = byteArrayOutputStream.toByteArray();
-        String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP); // NO_WRAP évite les \n
+        String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
 
         try {
             JSONObject requestBody = new JSONObject();
@@ -117,6 +116,7 @@ public class Page3Fragment extends Fragment {
                 @Override
                 public void onSuccess(JSONObject response) {
                     requireActivity().runOnUiThread(() -> {
+                        Log.d(TAG, "Selfie uploaded successfully");
                         Toast.makeText(requireContext(), "Selfie uploaded successfully", Toast.LENGTH_SHORT).show();
                         checkSimilarityScore(customerId);
                     });
@@ -127,6 +127,7 @@ public class Page3Fragment extends Fragment {
                     requireActivity().runOnUiThread(() ->
                             Toast.makeText(requireContext(), "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                     );
+                    Log.e(TAG, "Upload failed", e);
                 }
             });
         } catch (JSONException e) {
@@ -134,6 +135,7 @@ public class Page3Fragment extends Fragment {
             Toast.makeText(requireContext(), "Error creating request", Toast.LENGTH_SHORT).show();
         }
     }
+
     private void checkSimilarityScore(String customerId) {
         new CustomerService().inspectCustomerDisclose(customerId, new CustomerService.ApiCallback() {
             @Override
@@ -142,8 +144,7 @@ public class Page3Fragment extends Fragment {
                     try {
                         double score = response.getDouble("similarityScore");
                         CustomerDataActivity.similarityScore = score;
-                        String scoreText = String.format("Similarity Score: %.1f%%", score * 100);
-                        similarityScoreTextView.setText(scoreText);
+                        updateSimilarityScoreText(score);
                     } catch (JSONException e) {
                         similarityScoreTextView.setText("Score unavailable");
                         e.printStackTrace();
@@ -160,24 +161,24 @@ public class Page3Fragment extends Fragment {
         });
     }
 
+    private void updateSimilarityScoreText(double score) {
+        if (similarityScoreTextView != null) {
+            String scoreText = String.format("Similarity Score: %.1f%%", score * 100);
+            similarityScoreTextView.setText(scoreText);
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
-
-        // Rafraîchir l'image si elle est disponible
         if (CustomerDataActivity.selfieBitmap != null) {
             selfieImageView.setImageBitmap(CustomerDataActivity.selfieBitmap);
         }
-
-        // Rafraîchir aussi le portrait au cas où
         if (CustomerDataActivity.portraitBitmap != null) {
             portraitImageView.setImageBitmap(CustomerDataActivity.portraitBitmap);
         }
-
         if (CustomerDataActivity.similarityScore != null) {
-            String scoreText = String.format("Similarity Score: %.1f%%",
-                    CustomerDataActivity.similarityScore * 100);
-            similarityScoreTextView.setText(scoreText);
+            updateSimilarityScoreText(CustomerDataActivity.similarityScore);
         }
     }
 }

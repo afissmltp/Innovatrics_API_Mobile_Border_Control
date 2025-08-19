@@ -12,6 +12,8 @@ import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import androidx.fragment.app.Fragment;
@@ -113,11 +115,14 @@ public class CustomerDataActivity extends AppCompatActivity {
 
         Page2Fragment page2Fragment = Page2Fragment.newInstance(customerId, faceImageBytes);
 
+
+        Page3Fragment page3Fragment = Page3Fragment.newInstance(customerId, faceImageBytes);
+
         // 📌 Initialiser les fragments
         PAGES = new Fragment[] {
                 new Page1Fragment(),
                 page2Fragment,
-                new Page3Fragment(),
+                page3Fragment,
                 page4Fragment
         };
 
@@ -137,10 +142,24 @@ public class CustomerDataActivity extends AppCompatActivity {
         findViewById(R.id.selfieBtn).setOnClickListener(v -> {
             Intent intent = new Intent(this, SelfieCameraActivity.class);
             intent.putExtra("customerId", customerId);
+            intent.putExtra("parentActivity", "CustomerDataActivity");
             startActivityForResult(intent, 1001);
         });
 
+        // Vérifier si on doit afficher Page3
+        boolean showPage3 = getIntent().getBooleanExtra("showPage3Fragment", false);
+        if (showPage3) {
+            showPage3Fragment();
+        }
+
     }
+
+    public void showPage3Fragment() {
+        if (mViewPager != null) {
+            mViewPager.setCurrentItem(2, true);
+        }
+    }
+
     public String getCustomerId() {
         return customerId;
     }
@@ -169,7 +188,24 @@ public class CustomerDataActivity extends AppCompatActivity {
         tvAge = findViewById(R.id.tvAge);
 
     }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
 
+        if (requestCode == 1001 && resultCode == RESULT_OK && data != null) {
+            Bitmap selfie = data.getParcelableExtra("selfieBitmap");
+            if (selfie != null) {
+                CustomerDataActivity.selfieBitmap = selfie;
+                showPage3Fragment();
+
+                // Rafraîchir le fragment Page3
+                Fragment fragment = PAGES[2];
+                if (fragment instanceof Page3Fragment) {
+                    ((Page3Fragment) fragment).refreshSelfieAndUpload(selfie);
+                }
+            }
+        }
+    }
     private void fetchCustomerData() {
         customerService.getCustomer(customerId, new CustomerService.ApiCallback() {
             @Override

@@ -44,6 +44,13 @@ public class Display2Activity extends AppCompatActivity {
         setupCustomerId();
         setupButtonListeners();
         loadDocumentImage();
+
+        findViewById(R.id.selfieBtn).setOnClickListener(v -> {
+            Intent intent = new Intent(this, SelfieCameraActivity.class);
+            intent.putExtra("customerId", customerId);
+            intent.putExtra("parentActivity", "Display2Activity");
+            startActivityForResult(intent, 1001);
+        });
     }
 
     private void initializeViews() {

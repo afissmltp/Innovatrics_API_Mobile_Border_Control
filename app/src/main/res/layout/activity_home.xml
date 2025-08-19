@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <!-- Layout principal cliquable -->
     <LinearLayout
         android:id="@+id/clickable_linear_layout"
         android:layout_width="match_parent"
@@ -20,6 +20,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginBottom="20dp"
+            android:layout_gravity="center"
             android:src="@drawable/ic_document_capture"
             android:tint="@android:color/white" />
 
@@ -27,7 +28,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
-            android:text="Complete Document Capture process"
+            android:layout_gravity="center"
+            android:text="Lecture de document"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -36,12 +38,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:text="Full process of obtaining document data."
+            android:textAlignment="center"
+            android:text="Processus complet d'obtention des données du document"
+            android:layout_gravity="center"
             android:textColor="@android:color/white"
             android:textSize="14sp" />
     </LinearLayout>
 
-    <!-- ProgressBar + Message -->
     <LinearLayout
         android:id="@+id/loading_layout"
         android:layout_width="match_parent"
@@ -66,5 +69,15 @@
             android:paddingTop="16dp" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/version_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:text="v1.0.0"
+        android:textColor="@android:color/black"
+        android:textSize="12sp" />
 
 </FrameLayout>
