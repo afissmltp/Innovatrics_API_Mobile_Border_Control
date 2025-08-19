@@ -1,5 +1,6 @@
 package com.dynamsoft.documentscanner;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -19,6 +20,7 @@ import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
+import com.dynamsoft.documentscanner.ui.ReadNFCActivity;
 import com.google.android.material.tabs.TabLayout;
 
 import org.json.JSONException;
@@ -125,6 +127,18 @@ public class CustomerDataActivity extends AppCompatActivity {
         // Récupérer l'index du fragment à afficher
         int fragmentIndex = getIntent().getIntExtra("openFragmentIndex", 0);
         mViewPager.setCurrentItem(fragmentIndex); // ouvre directement le fragment 4
+
+        findViewById(R.id.readNfcBtn).setOnClickListener(v -> {
+            Intent intent = new Intent(this, ReadNFCActivity.class);
+            intent.putExtra("customerId", customerId);
+            startActivityForResult(intent, 1001);
+        });
+
+        findViewById(R.id.selfieBtn).setOnClickListener(v -> {
+            Intent intent = new Intent(this, SelfieCameraActivity.class);
+            intent.putExtra("customerId", customerId);
+            startActivityForResult(intent, 1001);
+        });
 
     }
     public String getCustomerId() {

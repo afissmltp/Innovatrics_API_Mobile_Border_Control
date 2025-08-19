@@ -17,7 +17,7 @@
         android:layout_above="@id/progressBar"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="16dp"
-        android:text="Prise de photo en cours..."
+        android:text="Envoi du document en cours..."
         android:textSize="18sp" />
 
 </RelativeLayout>

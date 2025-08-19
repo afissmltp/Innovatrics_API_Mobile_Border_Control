@@ -4,6 +4,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 
+import com.google.gson.Gson;
+
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -19,9 +21,10 @@ import okhttp3.Response;
 
 public class CustomerService {
     //private static final String BASE_URL = "http://10.0.2.2:8080/api/v1";
-    private static final String BASE_URL = "https://feea811070e7.ngrok-free.app/api/v1";
+    private static final String BASE_URL = "https://17e4263434f9.ngrok-free.app/api/v1";
     private final OkHttpClient client;
     private static final String BEARER_TOKEN = "aW5rX2I5YWU5MjY5N2JlMjQ0Y2YwZmQ3NDNiNjMwMjE1ODVlOmluc19leUp0WlhSaFpHRjBZU0k2SUhzaVkyeHBaVzUwSWpvZ2V5SnBaQ0k2SUNJNVpUWmpOR1JpWWkxbU5qRm1MVFExWVRndFlUQTFaaTB3WkdVek1qUXlOamhpTm1FaUxDQWlibUZ0WlNJNklDSlRUVXhVVUNKOUxDQWliR2xqWlc1elpWOWpkWE4wYjIxZmNISnZjR1Z5ZEdsbGN5STZJSHNpTDJOdmJuUnlZV04wTDJSdmRDOWthWE12Wlc1aFlteGxaQ0k2SUNKMGNuVmxJaXdnSWk5amIyNTBjbUZqZEM5a2IzUXZaWFpoYkhWaGRHbHZiaUk2SUNKMGNuVmxJaXdnSWk5amIyNTBjbUZqZEM5a2IzUXZaR2x6TDJ4cFkyVnVjMlZXWlhKemFXOXVJam9nSWpNaUxDQWlMMk52Ym5SeVlXTjBMM050WVhKMFptRmpaVjlsYldKbFpHUmxaQzlsYm1GaWJHVWlPaUFpZEhKMVpTSXNJQ0l2WTI5dWRISmhZM1F2YzIxaGNuUm1ZV05sWDJWdFltVmtaR1ZrTDNCaGJHMGlPaUFpZEhKMVpTSXNJQ0l2WTI5dWRISmhZM1F2YzIxaGNuUm1ZV05sWDJWdFltVmtaR1ZrTDNCaGJHMWZiR2wyWlc1bGMzTWlPaUFpZEhKMVpTSjlMQ0FpWTNKbFlYUnBiMjVmZEdsdFpYTjBZVzF3SWpvZ0lqQTNMekV4THpJd01qVWdNRGs2TVRRNk1qQWdWVlJESWl3Z0luWmhiR2xrWDNSdklqb2dJakE1THpBNUx6SXdNalVnTURBNk1EQTZNREFnVlZSREluMHNJQ0p6YVdkdVlYUjFjbVVpT2lBaVNHbzFRVXB1Y0c4MFIyTjZMemhVVjJoNVdWQm9NVGc1U2xORlVqSklaV2xsV0hWblZqUlpPR1prVEU5UGRtOW5ZM3BDUVRsdWQzb3lSVGhaV0RGYUwxaEtaVXBQWjJ0T2IzWktSVFZpV21SbFZWcDJRbWM5UFNKOQ==";
+    private final Gson gson;
 
     public CustomerService() {
         this.client = new OkHttpClient.Builder()
@@ -29,6 +32,8 @@ public class CustomerService {
                 .readTimeout(60, TimeUnit.SECONDS)    // 60 seconds to read data
                 .writeTimeout(60, TimeUnit.SECONDS)   // 60 seconds to write data
                 .build();
+        this.gson = new Gson();
+
     }
 
     public void createCustomer(final ApiCallback callback) {
@@ -226,37 +231,6 @@ public class CustomerService {
         });
     }
 
-    public void getCustomerSelfie(String customerId, ApiCallback callback) {
-        Request request = new Request.Builder()
-                .url(BASE_URL + "/customers/" + customerId + "/selfie")
-                .get()
-                .addHeader("Authorization", "Bearer " + BEARER_TOKEN)
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                callback.onFailure(new IOException("Network error: " + e.getMessage()));
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                try {
-                    if (!response.isSuccessful()) {
-                        throw new IOException("HTTP " + response.code() + ": " + response.body().string());
-                    }
-                    String responseBody = response.body().string();
-                    JSONObject jsonData = new JSONObject(responseBody);
-                    callback.onSuccess(jsonData);
-                } catch (Exception e) {
-                    callback.onFailure(e);
-                } finally {
-                    response.close();
-                }
-            }
-        });
-    }
-
     public void provideCustomerSelfie(String customerId, JSONObject requestBody, ApiCallback callback) {
         final MediaType mediaTypeJson = MediaType.parse("application/json; charset=utf-8");
 
@@ -352,7 +326,6 @@ public class CustomerService {
             }
         });
     }
-    // New method to get a document image
     public void getDocumentFrontImage(String customerId, ApiCallback callback) {
         Request request = new Request.Builder()
                 .url(BASE_URL + "/customers/" + customerId + "/document/pages/front?width=600")
@@ -477,9 +450,35 @@ public class CustomerService {
         }
     }
 
+    public void inspectDocument(String customerId, ApiCallback callback) {
+        try {
+            Request request = new Request.Builder()
+                    .url(BASE_URL + "/customers/" + customerId + "/document/inspect")
+                    .post(RequestBody.create(null, new byte[0]))  // Corps vide
+                    .addHeader("Authorization", "Bearer " + BEARER_TOKEN)
+                    .build();
 
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    callback.onFailure(e);
+                }
 
-    public interface ApiCallback {
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    try {
+                        String responseBody = response.body().string();
+                        JSONObject jsonData = new JSONObject(responseBody);
+                        callback.onSuccess(jsonData);
+                    } catch (Exception e) {
+                        callback.onFailure(e);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            callback.onFailure(e);
+        }
+    }    public interface ApiCallback {
         void onSuccess(JSONObject response);
         void onFailure(Exception e);
     }

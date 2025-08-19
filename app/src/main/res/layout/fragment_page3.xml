@@ -16,52 +16,136 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Score de similarité -->
-            <TextView
-                android:id="@+id/tvSimilarityScore"
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Score de similarité: Null"
-                android:textAlignment="center"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:layout_marginBottom="16dp"
-                android:textColor="@color/purple_app_bar"/>
+                android:orientation="horizontal"
+                android:gravity="center_horizontal"
+                android:layout_marginBottom="16dp">
+                <!-- Section Portrait du document -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_gravity="center">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Portrait du document"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
 
-            <!-- Section Portrait du document -->
-            <TextView
+                    <!-- Section Selfie -->
+                    <ImageView
+                        android:id="@+id/portraitImageView"
+                        android:layout_width="match_parent"
+                        android:layout_height="178dp"
+                        android:layout_marginBottom="22dp"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitCenter" />
+                </LinearLayout>
+                <!-- Score de similarité -->
+                <TextView
+                    android:id="@+id/tvSimilarityScore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="similarité: Null"
+                    android:layout_gravity="center_vertical"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="16dp"
+                    android:textColor="@color/purple_app_bar"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_gravity="center">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Selfie du client"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
+
+                <ImageView
+                    android:id="@+id/imageView2"
+                    android:layout_width="match_parent"
+                    android:layout_height="178dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
+                    android:layout_marginBottom="16dp"
+                    android:background="@color/light_gray"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Portrait du document"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:orientation="horizontal"
+                android:gravity="center_horizontal"
+                android:layout_marginBottom="16dp">
+                <!-- Section Portrait du document -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_gravity="center">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Portrait RFID"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
 
-            <!-- Section Selfie -->
-            <ImageView
-                android:id="@+id/portraitImageView"
-                android:layout_width="match_parent"
-                android:layout_height="178dp"
-                android:layout_marginBottom="22dp"
-                android:adjustViewBounds="true"
-                android:background="@color/light_gray"
-                android:scaleType="fitCenter" />
+                    <!-- Section Selfie -->
+                    <ImageView
+                        android:id="@+id/portraitRFIDView"
+                        android:layout_width="match_parent"
+                        android:layout_height="178dp"
+                        android:layout_marginBottom="22dp"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitCenter" />
+                </LinearLayout>
+                <!-- Score de similarité -->
+                <TextView
+                    android:id="@+id/tvSimilarityScore2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="similarité: Null"
+                    android:layout_gravity="center_vertical"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="16dp"
+                    android:textColor="@color/purple_app_bar"/>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Selfie du client"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_gravity="center">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Selfie du client"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
 
-            <ImageView
-                android:id="@+id/imageView2"
-                android:layout_width="match_parent"
-                android:layout_height="178dp"
-                android:adjustViewBounds="true"
-                android:scaleType="fitCenter"
-                android:layout_marginBottom="16dp"
-                android:background="@color/light_gray"/>
-
+                    <ImageView
+                        android:id="@+id/selfie"
+                        android:layout_width="match_parent"
+                        android:layout_height="178dp"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitCenter"
+                        android:layout_marginBottom="16dp"
+                        android:background="@color/light_gray"/>
+                </LinearLayout>
+            </LinearLayout>
             <Button
                 android:id="@+id/openCambtn"
                 android:layout_width="wrap_content"
@@ -69,7 +153,6 @@
                 android:text="Prendre un selfie"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="20dp"/>
-
 
         </LinearLayout>
     </ScrollView>

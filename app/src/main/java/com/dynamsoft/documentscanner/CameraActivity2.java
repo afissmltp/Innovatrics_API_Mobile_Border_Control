@@ -148,7 +148,7 @@ public class CameraActivity2 extends AppCompatActivity {
                         Toast.makeText(CameraActivity2.this, "Upload réussi", Toast.LENGTH_SHORT).show();
 
                         // Lancer l'activité d'affichage
-                        Intent intent = new Intent(CameraActivity2.this, DisplayActivity.class);
+                        Intent intent = new Intent(CameraActivity2.this, Display2Activity.class);
                         intent.putExtra("customerId", customerId);
                         startActivity(intent);
 

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.alimert.passportreader.ui.MainActivity">
+    tools:context="com.dynamsoft.documentscanner.ui.ReadNFCActivity">
 
     <LinearLayout
         android:id="@+id/loading_layout"
@@ -17,12 +17,13 @@
         <ProgressBar
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal" />
+            android:layout_gravity="center_horizontal"
+            android:indeterminateTint="@color/purple_app_bar"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/info_loading" />
+            android:text="Lecture des données de la puce en cours, \nveuillez patienter..." />
 
     </LinearLayout>
 

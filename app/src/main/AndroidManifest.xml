@@ -55,6 +55,14 @@
             android:name=".DisplayActivity"
             android:exported="false" />
         <activity
+            android:name=".Display2Activity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SelfieCameraActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".DisplayNFCDataActivity"
             android:exported="false" />
         <activity
