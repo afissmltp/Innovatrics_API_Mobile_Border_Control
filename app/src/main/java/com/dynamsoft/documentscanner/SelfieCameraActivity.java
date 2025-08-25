@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -15,6 +16,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import com.bumptech.glide.Glide;
 
 
 public class SelfieCameraActivity extends AppCompatActivity {
@@ -41,6 +44,13 @@ public class SelfieCameraActivity extends AppCompatActivity {
 
         // Lancer caméra
         btnLaunchCamera.setOnClickListener(v -> checkCameraPermission());
+
+
+        ImageView imageView = findViewById(R.id.imageViewPortrait);
+        Glide.with(this) // 'this' peut être Activity ou Fragment
+                .asGif()    // indique que c'est un GIF animé
+                .load(R.drawable.portrait) // ton GIF dans res/drawable
+                .into(imageView);
     }
 
     private void navigateBack() {

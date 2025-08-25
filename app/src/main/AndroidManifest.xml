@@ -54,8 +54,13 @@
         <activity
             android:name=".DisplayActivity"
             android:exported="false" />
+
         <activity
             android:name=".Display2Activity"
+            android:exported="false" />
+
+        <activity
+            android:name=".FullscreenImageActivity"
             android:exported="false" />
 
         <activity

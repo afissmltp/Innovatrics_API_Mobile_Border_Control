@@ -1,8 +1,10 @@
 package com.dynamsoft.documentscanner;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -47,6 +49,7 @@ public class CustomerDataActivity extends AppCompatActivity {
     public static Bitmap rectoBitmap = null;
     public static Bitmap selfieBitmap = null;
     public static Double similarityScore = null;
+    public static Integer rfidSimilarityScore = null;
 
     private final String[] PAGE_TITLES = new String[] {
             "RÉSULTAT GLOBAL",
@@ -87,11 +90,22 @@ public class CustomerDataActivity extends AppCompatActivity {
         String surname = getIntent().getStringExtra("surname");
         //String personalNumber = getIntent().getStringExtra("personalNumber");
         String gender = getIntent().getStringExtra("gender");
+        // Transformer le genre avant d’envoyer au fragment
+        if ("Male".equalsIgnoreCase(gender)) {
+            gender = "Homme";
+        } else if ("Female".equalsIgnoreCase(gender)) {
+            gender = "Femme";
+        }
+
         String birthDate = getIntent().getStringExtra("birthDate");
         String expiryDate = getIntent().getStringExtra("expiryDate");
         String serialNumber = getIntent().getStringExtra("serialNumber");
         String nationality = getIntent().getStringExtra("nationality");
         String docType = getIntent().getStringExtra("docType");
+        if (docType != null && !docType.isEmpty() && "PASSPORT".equalsIgnoreCase(docType)) {
+            docType = "Passeport";
+        }
+
         String issuerAuthority = getIntent().getStringExtra("issuerAuthority");
 
         // Créer Page4Fragment avec un Bundle contenant les données
@@ -152,6 +166,12 @@ public class CustomerDataActivity extends AppCompatActivity {
             showPage3Fragment();
         }
 
+        imageView.setOnClickListener(v -> {
+            Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
+            showImageFullscreen(bitmap);
+        });
+
+
     }
 
     public void showPage3Fragment() {
@@ -187,6 +207,19 @@ public class CustomerDataActivity extends AppCompatActivity {
         imageView = findViewById(R.id.imageView);
         tvAge = findViewById(R.id.tvAge);
 
+    }
+
+    private void showImageFullscreen(Bitmap bitmap) {
+        Dialog dialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        dialog.setContentView(R.layout.dialog_fullscreen_image);
+
+        ImageView imageView = dialog.findViewById(R.id.dialogImageView);
+        imageView.setImageBitmap(bitmap);
+
+        // Fermer au clic
+        imageView.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -279,7 +312,8 @@ public class CustomerDataActivity extends AppCompatActivity {
             // Affichage dans les TextViews
             tvName.setText(name);
             tvSurname.setText(surName);
-            tvGender.setText(gen);
+            tvGender.setText("M".equals(gen) ? "Homme" : "F".equals(gen) ? "Femme" : "N/A");
+
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -405,6 +439,7 @@ public class CustomerDataActivity extends AppCompatActivity {
             selfieBitmap = null;
         }
         similarityScore = null;
+        rfidSimilarityScore = null;
         super.onDestroy();
     }
 }

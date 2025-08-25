@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white">
@@ -14,141 +14,195 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:gravity="center_horizontal">
 
-
-            <LinearLayout
+            <!-- Bloc 1: Portrait document vs Selfie -->
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_horizontal"
-                android:layout_marginBottom="16dp">
-                <!-- Section Portrait du document -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_gravity="center">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Portrait du document"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="8dp"/>
-
-                    <!-- Section Selfie -->
-                    <ImageView
-                        android:id="@+id/portraitImageView"
-                        android:layout_width="match_parent"
-                        android:layout_height="178dp"
-                        android:layout_marginBottom="22dp"
-                        android:adjustViewBounds="true"
-                        android:scaleType="fitCenter" />
-                </LinearLayout>
-                <!-- Score de similarité -->
-                <TextView
-                    android:id="@+id/tvSimilarityScore"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="similarité: Null"
-                    android:layout_gravity="center_vertical"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:layout_marginBottom="16dp"
-                    android:textColor="@color/purple_app_bar"/>
+                android:layout_marginBottom="16dp"
+                android:padding="16dp">
 
                 <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_gravity="center">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Selfie du client"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp"/>
-
-                <ImageView
-                    android:id="@+id/imageView2"
                     android:layout_width="match_parent"
-                    android:layout_height="178dp"
-                    android:adjustViewBounds="true"
-                    android:scaleType="fitCenter"
-                    android:layout_marginBottom="16dp"/>
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Document vs Selfie"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_app_bar"
+                        android:gravity="center"
+                        android:textSize="15sp"
+                        android:layout_marginBottom="12dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Portrait du document"
+                                android:layout_marginBottom="8dp" />
+
+                            <ImageView
+                                android:id="@+id/portraitImageView"
+                                android:layout_width="140dp"
+                                android:layout_height="180dp"
+                                android:scaleType="centerCrop"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Selfie client"
+                                android:layout_marginBottom="8dp" />
+
+                            <ImageView
+                                android:id="@+id/imageView2"
+                                android:layout_width="140dp"
+                                android:layout_height="180dp"
+                                android:scaleType="centerCrop"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Score Container for Portrait vs Selfie -->
+                    <LinearLayout
+                        android:id="@+id/scoreContainerPortraitSelfie"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginTop="12dp"
+                        android:paddingVertical="8dp"
+                        android:paddingHorizontal="16dp">
+
+                        <TextView
+                            android:id="@+id/tvSimilarityScore"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Similarité: -"
+                            android:textStyle="bold"
+                            android:textSize="15sp"
+                            android:textColor="@color/purple_app_bar" />
+                    </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
-            <!-- Séparateur -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@android:color/darker_gray"
-                android:layout_marginBottom="16dp"/>
-            <LinearLayout
+            </androidx.cardview.widget.CardView>
+
+            <!-- Bloc 2: RFID vs Selfie -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/rfidComparisonCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_horizontal"
-                android:layout_marginBottom="16dp">
-                <!-- Section Portrait du document -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_gravity="center">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Portrait RFID"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="8dp"/>
-
-                    <!-- Section Selfie -->
-                    <ImageView
-                        android:id="@+id/rfidImageView"
-                        android:layout_width="match_parent"
-                        android:layout_height="178dp"
-                        android:layout_marginBottom="22dp"
-                        android:adjustViewBounds="true"
-                        android:scaleType="fitCenter" />
-                </LinearLayout>
-                <!-- Score de similarité -->
-                <TextView
-                    android:id="@+id/tvSimilarityScore2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="similarité: Null"
-                    android:layout_gravity="center_vertical"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:layout_marginBottom="16dp"
-                    android:textColor="@color/purple_app_bar"/>
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:visibility="visible">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_gravity="center">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Selfie du client"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="8dp"/>
+                    android:orientation="vertical">
 
-                    <ImageView
-                        android:id="@+id/selfieIMG"
+                    <TextView
                         android:layout_width="match_parent"
-                        android:layout_height="178dp"
-                        android:adjustViewBounds="true"
-                        android:scaleType="fitCenter"
-                        android:layout_marginBottom="16dp"/>
+                        android:layout_height="wrap_content"
+                        android:text="RFID vs Selfie"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_app_bar"
+                        android:gravity="center"
+                        android:textSize="15sp"
+                        android:layout_marginBottom="12dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Portrait RFID"
+                                android:layout_marginBottom="8dp" />
+
+                            <ImageView
+                                android:id="@+id/rfidImageView"
+                                android:layout_width="140dp"
+                                android:layout_height="180dp"
+                                android:scaleType="centerCrop"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Selfie client"
+                                android:layout_marginBottom="8dp" />
+
+                            <ImageView
+                                android:id="@+id/selfieIMG"
+                                android:layout_width="140dp"
+                                android:layout_height="180dp"
+                                android:scaleType="centerCrop"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Score Container for RFID vs Selfie -->
+                    <LinearLayout
+                        android:id="@+id/scoreContainerRfidSelfie"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginTop="12dp"
+                        android:paddingVertical="8dp"
+                        android:paddingHorizontal="16dp">
+
+                        <TextView
+                            android:id="@+id/tvRfidSimilarityScore"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Similarité: -"
+                            android:textStyle="bold"
+                            android:textSize="15sp"
+                            android:textColor="@color/purple_app_bar" />
+                    </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
         </LinearLayout>
     </ScrollView>
 </FrameLayout>

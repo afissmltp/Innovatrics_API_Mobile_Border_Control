@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -16,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
 
 import org.json.JSONObject;
@@ -53,6 +55,12 @@ public class CameraActivity2 extends AppCompatActivity {
         } else {
             openCamera();
         }
+
+        ImageView imageView = findViewById(R.id.doc_upload);
+        Glide.with(this) // 'this' peut être Activity ou Fragment
+                .asGif()    // indique que c'est un GIF animé
+                .load(R.drawable.telecharger) // ton GIF dans res/drawable
+                .into(imageView);
     }
 
     @Override

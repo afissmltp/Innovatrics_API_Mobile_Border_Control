@@ -21,4 +21,16 @@
     <color name="primary_text">#212121</color>
     <color name="secondary_text">#757575</color>
     <color name="bright_foreground_material_light">#FFFFFFFF</color>
+    <!-- Nouvelles couleurs pour les scores -->
+    <color name="score_low_bg">#FFCDD2</color>       <!-- Rouge clair pour score faible (<50%) -->
+    <color name="score_low_text">#D32F2F</color>     <!-- Rouge foncé pour score faible -->
+
+    <color name="score_medium_bg">#FFF9C4</color>    <!-- Jaune clair pour score moyen (50-79%) -->
+    <color name="score_medium_text">#FBC02D</color>  <!-- Jaune foncé pour score moyen -->
+
+    <color name="score_high_bg">#C8E6C9</color>      <!-- Vert clair pour score élevé (80-99%) -->
+    <color name="score_high_text">#388E3C</color>    <!-- Vert foncé pour score élevé -->
+
+    <color name="score_perfect_bg">#A5D6A7</color>   <!-- Vert un peu plus foncé pour score parfait (100%) -->
+    <color name="score_perfect_text">#2E7D32</color> <!-- Vert très foncé pour score parfait -->
 </resources>

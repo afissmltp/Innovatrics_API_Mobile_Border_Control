@@ -1,10 +1,5 @@
 package com.dynamsoft.documentscanner.ui;
 
-import static com.dynamsoft.documentscanner.ui.CaptureActivity.MRZ_RESULT;
-import static org.jmrtd.PassportService.DEFAULT_MAX_BLOCKSIZE;
-import static org.jmrtd.PassportService.NORMAL_MAX_TRANCEIVE_LENGTH;
-
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -17,15 +12,15 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide;
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
 import com.dynamsoft.documentscanner.CustomerDataActivity;
 import com.dynamsoft.documentscanner.R;
@@ -36,6 +31,7 @@ import com.dynamsoft.documentscanner.model.PersonDetails;
 import com.dynamsoft.documentscanner.util.DateUtil;
 import com.dynamsoft.documentscanner.util.Image;
 import com.dynamsoft.documentscanner.util.ImageUtil;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 
 import net.sf.scuba.smartcards.CardFileInputStream;
@@ -73,8 +69,6 @@ import java.util.List;
 public class ReadNFCActivity extends AppCompatActivity {
 
     private static final String TAG = ReadNFCActivity.class.getSimpleName();
-    private static final int APP_CAMERA_ACTIVITY_REQUEST_CODE = 150;
-
     private NfcAdapter adapter;
 
     private View mainLayout;
@@ -87,6 +81,7 @@ public class ReadNFCActivity extends AppCompatActivity {
     private CustomerService customerService;
     private String customerId;
     private String mrzText = "N/A";
+    private MaterialButton btnClose;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,23 +99,34 @@ public class ReadNFCActivity extends AppCompatActivity {
         imageLayout = findViewById(R.id.image_layout);
         ivPhoto = findViewById(R.id.view_photo);
         tvResult = findViewById(R.id.text_result);
+        btnClose = findViewById(R.id.btnClose);
+        btnClose.setOnClickListener(v -> finish());
+
+        ImageView imageView = findViewById(R.id.image_nfc);
+        Glide.with(this) // 'this' peut être Activity ou Fragment
+                .asGif()    // indique que c'est un GIF animé
+                .load(R.drawable.nfcgif) // ton GIF dans res/drawable
+                .into(imageView);
+
 
         adapter = NfcAdapter.getDefaultAdapter(this);
+
         if (adapter == null) {
-            Snackbar.make(findViewById(android.R.id.content),
-                    "NFC non supporté sur cet appareil",
-                    Snackbar.LENGTH_LONG).show();
-            finish();
-            return;
+            new AlertDialog.Builder(this)
+                    .setTitle("NFC non supporté")
+                    .setMessage("Votre appareil ne prend pas en charge la technologie NFC. Cette fonctionnalité n'est pas disponible.")
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        finish();
+                    })
+                    .setCancelable(false) // Empêche la fermeture de l'alerte
+                    .show();
+            return; // Arrête l'exécution si le NFC n'est pas supporté
         }
 
         fetchCustomerData();
     }
 
     private void setMrzData(MRZInfo mrzInfo) {
-        mainLayout.setVisibility(View.GONE);
-        imageLayout.setVisibility(View.VISIBLE);
-
         passportNumber = mrzInfo.getDocumentNumber();
         expirationDate = mrzInfo.getDateOfExpiry();
         birthDate = mrzInfo.getDateOfBirth();
@@ -129,8 +135,20 @@ public class ReadNFCActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (adapter != null) {
+            adapter.disableForegroundDispatch(this);
+        }
+    }
 
-        adapter = NfcAdapter.getDefaultAdapter(this);
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (adapter != null) {
+            adapter.disableForegroundDispatch(this);
+        }
+    }
+
+    private void enableNfcForegroundDispatch() {
         if (adapter == null) {
             Toast.makeText(this, "NFC non supporté sur cet appareil", Toast.LENGTH_LONG).show();
             return;
@@ -150,16 +168,9 @@ public class ReadNFCActivity extends AppCompatActivity {
 
         Intent intent = new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
-        String[][] techList = new String[][]{ new String[] { "android.nfc.tech.IsoDep" } };
+        String[][] techList = new String[][]{new String[]{"android.nfc.tech.IsoDep"}};
         adapter.enableForegroundDispatch(this, pendingIntent, null, techList);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (adapter != null) {
-            adapter.disableForegroundDispatch(this);
-        }
+        Log.d(TAG, "NFC foreground dispatch enabled.");
     }
 
     @Override
@@ -170,10 +181,6 @@ public class ReadNFCActivity extends AppCompatActivity {
             if (tag != null && Arrays.asList(tag.getTechList()).contains("android.nfc.tech.IsoDep")) {
 
                 clearViews();
-
-                // Utiliser automatiquement le MRZ
-                MRZInfo mrzInfo = new MRZInfo(mrzText);
-                setMrzData(mrzInfo);
 
                 if (passportNumber != null && !passportNumber.isEmpty()
                         && expirationDate != null && !expirationDate.isEmpty()
@@ -187,7 +194,8 @@ public class ReadNFCActivity extends AppCompatActivity {
                     loadingLayout.setVisibility(View.VISIBLE);
 
                 } else {
-                    Snackbar.make(loadingLayout, R.string.error_input, Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(loadingLayout, "Veuillez attendre le chargement des données avant de scanner.", Snackbar.LENGTH_SHORT).show();
+                    imageLayout.setVisibility(View.VISIBLE);
                 }
             }
         }
@@ -214,7 +222,7 @@ public class ReadNFCActivity extends AppCompatActivity {
                 CardService cardService = CardService.getInstance(isoDep);
                 cardService.open();
 
-                PassportService service = new PassportService(cardService, NORMAL_MAX_TRANCEIVE_LENGTH, DEFAULT_MAX_BLOCKSIZE, true, false);
+                PassportService service = new PassportService(cardService, PassportService.NORMAL_MAX_TRANCEIVE_LENGTH, PassportService.DEFAULT_MAX_BLOCKSIZE, true, false);
                 service.open();
 
                 boolean paceSucceeded = false;
@@ -241,7 +249,6 @@ public class ReadNFCActivity extends AppCompatActivity {
                     }
                 }
 
-                // Lecture DG1
                 CardFileInputStream dg1In = service.getInputStream(PassportService.EF_DG1);
                 DG1File dg1File = new DG1File(dg1In);
 
@@ -262,7 +269,6 @@ public class ReadNFCActivity extends AppCompatActivity {
                     docType = DocType.PASSPORT;
                 }
 
-                // Lecture DG2 : Photo
                 CardFileInputStream dg2In = service.getInputStream(PassportService.EF_DG2);
                 DG2File dg2File = new DG2File(dg2In);
 
@@ -279,7 +285,6 @@ public class ReadNFCActivity extends AppCompatActivity {
                     personDetails.setFaceImageBase64(image.getBase64Image());
                 }
 
-                // Lecture DG3 : Empreintes
                 try {
                     CardFileInputStream dg3In = service.getInputStream(PassportService.EF_DG3);
                     DG3File dg3File = new DG3File(dg3In);
@@ -301,7 +306,6 @@ public class ReadNFCActivity extends AppCompatActivity {
                     Log.w(TAG, e);
                 }
 
-                // Lecture DG5 : Portrait
                 try {
                     CardFileInputStream dg5In = service.getInputStream(PassportService.EF_DG5);
                     DG5File dg5File = new DG5File(dg5In);
@@ -317,7 +321,6 @@ public class ReadNFCActivity extends AppCompatActivity {
                     Log.w(TAG, e);
                 }
 
-                // Lecture DG7 : Signature
                 try {
                     CardFileInputStream dg7In = service.getInputStream(PassportService.EF_DG7);
                     DG7File dg7File = new DG7File(dg7In);
@@ -334,12 +337,11 @@ public class ReadNFCActivity extends AppCompatActivity {
                     Log.w(TAG, e);
                 }
 
-                // Lecture DG11 : Infos additionnelles
                 try {
                     CardFileInputStream dg11In = service.getInputStream(PassportService.EF_DG11);
                     DG11File dg11File = new DG11File(dg11In);
 
-                    if(dg11File.getLength() > 0) {
+                    if (dg11File.getLength() > 0) {
                         AdditionalPersonDetails addDetails = additionalPersonDetails;
                         addDetails.setCustodyInformation(dg11File.getCustodyInformation());
                         addDetails.setNameOfHolder(dg11File.getNameOfHolder());
@@ -361,7 +363,6 @@ public class ReadNFCActivity extends AppCompatActivity {
                     Log.w(TAG, e);
                 }
 
-                // Lecture DG15 : Clé publique
                 try {
                     CardFileInputStream dg15In = service.getInputStream(PassportService.EF_DG15);
                     DG15File dg15File = new DG15File(dg15In);
@@ -395,13 +396,11 @@ public class ReadNFCActivity extends AppCompatActivity {
     }
 
     private void setResultToView(EDocument eDocument) {
-        // Préparer l'image
         Bitmap faceImage = ImageUtil.scaleImage(eDocument.getPersonDetails().getFaceImage());
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         faceImage.compress(Bitmap.CompressFormat.PNG, 100, stream);
         byte[] faceImageBytes = stream.toByteArray();
 
-        // Ouvrir CustomerDataActivity et passer les données
         openCustomerDataActivity(
                 faceImageBytes,
                 eDocument.getPersonDetails().getName(),
@@ -416,6 +415,7 @@ public class ReadNFCActivity extends AppCompatActivity {
                 eDocument.getPersonDetails().getIssuerAuthority()
         );
     }
+
     private void openCustomerDataActivity(byte[] faceImageBytes,
                                           String name,
                                           String surname,
@@ -431,7 +431,6 @@ public class ReadNFCActivity extends AppCompatActivity {
         intent.putExtra("customerId", customerId);
         intent.putExtra("faceImage", faceImageBytes);
 
-        // Ajouter chaque champ individuellement
         intent.putExtra("name", name);
         intent.putExtra("surname", surname);
         intent.putExtra("personalNumber", personalNumber);
@@ -443,7 +442,7 @@ public class ReadNFCActivity extends AppCompatActivity {
         intent.putExtra("docType", docType);
         intent.putExtra("issuerAuthority", issuerAuthority);
 
-        intent.putExtra("openFragmentIndex", 3); // index 3 = 4ème fragment
+        intent.putExtra("openFragmentIndex", 3);
         startActivity(intent);
     }
 
@@ -458,8 +457,9 @@ public class ReadNFCActivity extends AppCompatActivity {
             public void onSuccess(JSONObject response) {
                 runOnUiThread(() -> {
                     Log.d(TAG, "Customer data fetched: " + response.toString());
-                    Toast.makeText(ReadNFCActivity.this, "Customer data loaded.", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(ReadNFCActivity.this, "Customer data loaded.", Toast.LENGTH_SHORT).show();
                     displayMRZ(response);
+                    enableNfcForegroundDispatch();
                 });
             }
 
@@ -485,8 +485,13 @@ public class ReadNFCActivity extends AppCompatActivity {
                 JSONObject machineReadableZone = additionalTexts.optJSONObject("machineReadableZone");
                 if (machineReadableZone != null && machineReadableZone.has("visualZone")) {
                     mrzText = machineReadableZone.getString("visualZone");
+                    MRZInfo mrzInfo = new MRZInfo(mrzText);
+                    setMrzData(mrzInfo);
                 }
             }
+            imageLayout.setVisibility(View.VISIBLE);
+            loadingLayout.setVisibility(View.GONE);
+            mainLayout.setVisibility(View.GONE);
         } catch (JSONException e) {
             e.printStackTrace();
             Toast.makeText(this, "Error extracting data from JSON", Toast.LENGTH_SHORT).show();

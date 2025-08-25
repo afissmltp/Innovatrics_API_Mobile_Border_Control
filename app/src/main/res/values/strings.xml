@@ -33,6 +33,6 @@
     <string name="pref_key_camera_live_viewport" translatable="false">clv</string>
     <string name="label_name">Nom:</string>
     <string name="label_surname">Prénom:</string>
-    <string name="label_gender">Genre:</string>
+    <string name="label_gender">Sexe:</string>
     <string name="label_age">Âge:</string>
 </resources>

@@ -1,13 +1,16 @@
 package com.dynamsoft.documentscanner;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -18,22 +21,28 @@ import androidx.core.content.ContextCompat;
 
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
 import com.dynamsoft.documentscanner.ui.ReadNFCActivity;
+import com.jsibbold.zoomage.ZoomageView;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Locale;
 
 public class Display2Activity extends AppCompatActivity {
 
-    private ImageView documentImageView;
+    private ZoomageView documentImageView;
     private ProgressBar progressBar;
     private Button readDocBtn, rotateButton;
-    private TextView qualityStatus;
+    // Mise à jour : Remplacer qualityStatus par les nouvelles vues
+    private TextView expirationStatus, mrzStatus, textConsistencyStatus, ocrConfidenceStatus, screenshotStatus ,printCopyStatus;
+    private ImageView expirationIcon, mrzIcon, authenticityIcon, textConsistencyIcon, screenshotIcon , printCopyIcon;
+
     private CustomerService customerService;
     private String customerId;
     private int rotation = 0;
     private Bitmap displayedBitmap;
     private boolean isDocumentInspected = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +60,36 @@ public class Display2Activity extends AppCompatActivity {
             intent.putExtra("parentActivity", "Display2Activity");
             startActivityForResult(intent, 1001);
         });
+
+        findViewById(R.id.selfieBtn).setOnClickListener(v -> {
+            Intent intent = new Intent(this, SelfieCameraActivity.class);
+            intent.putExtra("customerId", customerId);
+            intent.putExtra("parentActivity", "CustomerDataActivity");
+            startActivityForResult(intent, 1001);
+        });
+        documentImageView.setOnClickListener(v -> {
+            Bitmap bitmap = ((BitmapDrawable) documentImageView.getDrawable()).getBitmap();
+            showImageFullscreen(bitmap);
+        });
+        View bottomControlBar = findViewById(R.id.bottomControlBar);
+        if (bottomControlBar != null) {
+            ImageButton selfieBtn = bottomControlBar.findViewById(R.id.selfieBtn);
+            if (selfieBtn != null) {
+                selfieBtn.setVisibility(View.GONE); // Cacher le bouton
+            }
+        }
+    }
+    private void showImageFullscreen(Bitmap bitmap) {
+        Dialog dialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        dialog.setContentView(R.layout.dialog_fullscreen_image);
+
+        ImageView imageView = dialog.findViewById(R.id.dialogImageView);
+        imageView.setImageBitmap(bitmap);
+
+        // Fermer au clic
+        imageView.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     private void initializeViews() {
@@ -58,7 +97,23 @@ public class Display2Activity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         readDocBtn = findViewById(R.id.readDocBtn);
         rotateButton = findViewById(R.id.rotateButton);
-        qualityStatus = findViewById(R.id.qualityStatus);
+        // Suppression de qualityStatus, non nécessaire dans le nouveau design
+        // qualityStatus = findViewById(R.id.qualityStatus);
+
+        // Initialisation des nouvelles vues pour les statuts
+        expirationStatus = findViewById(R.id.expirationStatus);
+        mrzStatus = findViewById(R.id.mrzStatus);
+        textConsistencyStatus = findViewById(R.id.textConsistencyStatus);
+        ocrConfidenceStatus = findViewById(R.id.ocrConfidenceStatus);
+        screenshotStatus =  findViewById(R.id.screenshotStatus);
+        printCopyStatus =  findViewById(R.id.printCopyStatus);
+
+
+        expirationIcon = findViewById(R.id.expirationIcon);
+        mrzIcon = findViewById(R.id.mrzIcon);
+        textConsistencyIcon = findViewById(R.id.textConsistencyIcon);
+        screenshotIcon = findViewById(R.id.screenshotIcon);
+        printCopyIcon = findViewById(R.id.printCopyIcon);
 
         readDocBtn.setEnabled(false);
         rotateButton.setEnabled(false);
@@ -147,69 +202,49 @@ public class Display2Activity extends AppCompatActivity {
                     try {
                         isDocumentInspected = true;
 
-                        // Construire le message détaillé
-                        StringBuilder inspectionDetails = new StringBuilder();
-
                         // 1. Statut d'expiration
                         boolean expired = response.optBoolean("expired", true);
-                        inspectionDetails.append("Expiration: ")
-                                .append(expired ? "EXPIRÉ" : "VALIDE")
-                                .append("\n\n");
+                        updateStatus(expirationStatus, expirationIcon,
+                                "Expiration : " + (expired ? "EXPIRÉ" : "VALIDE"), !expired);
 
                         // 2. Inspection MRZ
                         JSONObject mrzInspection = response.optJSONObject("mrzInspection");
                         if (mrzInspection != null) {
                             boolean mrzValid = mrzInspection.optBoolean("valid", false);
-                            inspectionDetails.append("MRZ: ")
-                                    .append(mrzValid ? "VALIDE" : "INVALIDE")
-                                    .append("\n\n");
+                            updateStatus(mrzStatus, mrzIcon,
+                                    "MRZ : " + (mrzValid ? "VALIDE" : "INVALIDE"), mrzValid);
                         }
 
-                        // 3. Inspection portrait
-                        JSONObject portraitInspection = response.optJSONObject("portraitInspection");
-                        if (portraitInspection != null) {
-                            String genderEstimate = portraitInspection.optString("genderEstimate", "N/A");
-                            JSONObject genderConsistency = portraitInspection.optJSONObject("genderConsistency");
-                            boolean mrzConsistent = genderConsistency != null && genderConsistency.optBoolean("mrz", false);
-
-                            inspectionDetails.append("Portrait:\n")
-                                    .append("- Genre estimé: ").append(genderEstimate).append("\n")
-                                    .append("- Cohérence MRZ: ").append(mrzConsistent ? "OK" : "INCOHERENT")
-                                    .append("\n\n");
-                        }
-
-                        // 4. Zone visuelle
+                        // 3. Zone visuelle et texte
                         JSONObject visualZone = response.optJSONObject("visualZoneInspection");
                         if (visualZone != null) {
-                            JSONObject ocrConfidence = visualZone.optJSONObject("ocrConfidence");
-                            double confidence = ocrConfidence != null ? ocrConfidence.optDouble("confidence", 0) * 100 : 0;
                             boolean textConsistent = visualZone.optJSONObject("textConsistency") != null
                                     && visualZone.optJSONObject("textConsistency").optBoolean("consistent", false);
+                            updateStatus(textConsistencyStatus, textConsistencyIcon,
+                                    "Texte : " + (textConsistent ? "COHÉRENT" : "INCOHÉRENT"), textConsistent);
 
-                            inspectionDetails.append("Zone visuelle:\n")
-                                    .append("- Confiance OCR: ").append(String.format(Locale.getDefault(), "%.2f%%", confidence)).append("\n")
-                                    .append("- Texte cohérent: ").append(textConsistent ? "OUI" : "NON")
-                                    .append("\n\n");
+                            JSONObject ocrConfidence = visualZone.optJSONObject("ocrConfidence");
+                            double confidence = ocrConfidence != null ? ocrConfidence.optDouble("confidence", 0) * 100 : 0;
+                            ocrConfidenceStatus.setText(String.format(Locale.getDefault(),
+                                    "Confiance OCR : %.2f%%", confidence));
                         }
 
-                        // 5. Altération de page
+                        // 4. Altération de page (séparée)
                         JSONObject pageTampering = response.optJSONObject("pageTampering");
                         if (pageTampering != null) {
                             JSONObject front = pageTampering.optJSONObject("front");
                             if (front != null) {
+                                // Screenshot
                                 boolean isScreenshot = front.optBoolean("looksLikeScreenshot", false);
-                                boolean isPrintCopy = front.optBoolean("looksLikePrintCopy", false);
+                                updateStatus(screenshotStatus, screenshotIcon,
+                                        "Screenshot : " + (isScreenshot ? "OUI" : "NON"), !isScreenshot);
 
-                                inspectionDetails.append("Authenticité:\n")
-                                        .append("- Screenshot: ").append(isScreenshot ? "OUI" : "NON").append("\n")
-                                        .append("- Copie imprimée: ").append(isPrintCopy ? "OUI" : "NON");
+                                // Print copy
+                                boolean isPrintCopy = front.optBoolean("looksLikePrintCopy", false);
+                                updateStatus(printCopyStatus, printCopyIcon,
+                                        "PrintCopy : " + (isPrintCopy ? "OUI" : "NON"), !isPrintCopy);
                             }
                         }
-
-                        // Afficher le résultat
-                        qualityStatus.setText(inspectionDetails.toString());
-                        qualityStatus.setTextColor(ContextCompat.getColor(Display2Activity.this,
-                                expired ? R.color.red : R.color.green));
 
                         enableControls();
                         hideProgress();
@@ -226,15 +261,30 @@ public class Display2Activity extends AppCompatActivity {
             }
         });
     }
+
     private void handleInspectionError(String message, Exception e) {
         Log.e("DisplayActivity", message, e);
         runOnUiThread(() -> {
             hideProgress();
-            qualityStatus.setText("Échec de l'inspection");
-            qualityStatus.setTextColor(ContextCompat.getColor(this, R.color.red));
+
+            // Mettre à jour les vues avec un statut d'erreur
+            updateStatus(expirationStatus, expirationIcon, "Expiration : Inconnu", false);
+            updateStatus(mrzStatus, mrzIcon, "MRZ : Inconnu", false);
+            updateStatus(textConsistencyStatus, textConsistencyIcon, "Texte : Inconnu", false);
+            ocrConfidenceStatus.setText("Confiance OCR : N/A");
+
+            // Statuts d'altération
+            if (screenshotStatus != null && screenshotIcon != null) {
+                updateStatus(screenshotStatus, screenshotIcon, "Screenshot : Inconnu", false);
+            }
+            if (printCopyStatus != null && printCopyIcon != null) {
+                updateStatus(printCopyStatus, printCopyIcon, "PrintCopy : Inconnu", false);
+            }
+
             Toast.makeText(this, message + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
         });
     }
+
     private void enableControls() {
         readDocBtn.setEnabled(true);
         rotateButton.setEnabled(true);
@@ -243,13 +293,23 @@ public class Display2Activity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 1001 && resultCode == RESULT_OK) {
+
+        if (requestCode == 1001 && resultCode == RESULT_OK && data != null) {
+
+            // Récupérer le selfie s'il existe
+           /* Bitmap selfie = data.getParcelableExtra("selfieBitmap");
+            if (selfie != null) {
+                CustomerDataActivity.selfieBitmap = selfie; // stocker pour CustomerDataActivity
+            }
+*/
+            // Rediriger vers CustomerDataActivity
             Intent intent = new Intent(this, CustomerDataActivity.class);
             intent.putExtra("customerId", customerId);
             intent.putExtra("nfcData", data.getSerializableExtra("nfcData"));
             startActivity(intent);
         }
     }
+
 
     private Bitmap decodeBase64ToBitmap(String base64Image) {
         try {
@@ -281,5 +341,21 @@ public class Display2Activity extends AppCompatActivity {
             hideProgress();
             Toast.makeText(this, message, Toast.LENGTH_LONG).show();
         });
+    }
+
+    /**
+     * Méthode utilitaire pour mettre à jour les TextViews et ImageViews de statut.
+     *
+     * @param statusText La vue TextView à mettre à jour.
+     * @param statusIcon La vue ImageView à mettre à jour.
+     * @param text Le texte à afficher.
+     * @param isOk True si le statut est positif, false sinon.
+     */
+    private void updateStatus(TextView statusText, ImageView statusIcon, String text, boolean isOk) {
+        statusText.setText(text);
+        int color = ContextCompat.getColor(this, isOk ? R.color.green : R.color.red);
+        int iconResId = isOk ? R.drawable.ic_check_circle : R.drawable.ic_error_circle;
+        statusIcon.setColorFilter(color);
+        statusIcon.setImageResource(iconResId);
     }
 }

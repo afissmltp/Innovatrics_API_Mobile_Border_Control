@@ -8,6 +8,15 @@
     android:gravity="end|center_vertical"
     android:orientation="horizontal">
 
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Scan e-Passport (NFC)"
+        android:textColor="@color/white"
+        android:layout_marginLeft="10dp"/>
+
     <ImageButton
         android:id="@+id/selfieBtn"
         android:layout_width="45dp"
@@ -25,5 +34,7 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:scaleType="centerInside"
         android:src="@drawable/ic_nfc" />
+
+
 
 </LinearLayout>

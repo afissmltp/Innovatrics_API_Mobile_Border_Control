@@ -1,7 +1,9 @@
 package com.dynamsoft.documentscanner;
 
+import android.app.Dialog;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
@@ -71,8 +73,35 @@ public class Page2Fragment extends Fragment {
             loadDocumentFrontImage();
             loadDocumentPortrait();
         }
+        portraitImageView.setOnClickListener(v -> {
+            Bitmap bitmap = ((BitmapDrawable) portraitImageView.getDrawable()).getBitmap();
+            showImageFullscreen(bitmap);
+        });
+
+        faceImageView.setOnClickListener(v -> {
+            Bitmap bitmap = ((BitmapDrawable) faceImageView.getDrawable()).getBitmap();
+            showImageFullscreen(bitmap);
+        });
+        rectoImageView.setOnClickListener(v -> {
+            Bitmap bitmap = ((BitmapDrawable) rectoImageView.getDrawable()).getBitmap();
+            showImageFullscreen(bitmap);
+        });
 
         return view;
+    }
+    private void showImageFullscreen(Bitmap bitmap) {
+        if (getActivity() == null) return; // sécurité
+
+        Dialog dialog = new Dialog(getActivity(), android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        dialog.setContentView(R.layout.dialog_fullscreen_image);
+
+        ImageView imageView = dialog.findViewById(R.id.dialogImageView);
+        imageView.setImageBitmap(bitmap);
+
+        // Fermer au clic
+        imageView.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
     private boolean loadFaceImage() {
         Bundle args = getArguments();

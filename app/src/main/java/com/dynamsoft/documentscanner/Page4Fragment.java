@@ -1,9 +1,13 @@
 package com.dynamsoft.documentscanner;
 
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,19 +17,26 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.FaceMatchingService;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -45,6 +56,7 @@ public class Page4Fragment extends Fragment {
             genderTextView, birthDateTextView, expiryDateTextView,
             serialNumberTextView, nationalityTextView, docTypeTextView,
             issuerAuthorityTextView;
+    private JSONObject customerData;
 
     private CustomerService customerService;
     private FaceMatchingService faceMatchingService;
@@ -55,6 +67,11 @@ public class Page4Fragment extends Fragment {
     private ProgressDialog progressDialog;
     private ExecutorService executor;
     private int similarityScore = -1;
+    private TextView tvGivenName, tvSurnameMrz, tvDobMrz, tvNationalityMrz, tvGenderMrz,
+            tvDocumentNumberMrz, tvDateOfExpiryMrz, tvDocumentTypeMrz, tvIssuingAuthorityMrz;
+    private ImageView iconSurname, iconGivenName, iconGender, iconDob, iconExpiryDate,
+            iconDocNum, iconNationality, iconDocType, iconIssuer;
+    private LinearLayout scoreContainerPortraitSelfie;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -81,6 +98,7 @@ public class Page4Fragment extends Fragment {
         customerService = new CustomerService();
         faceMatchingService = new FaceMatchingService(requireContext());
         executor = Executors.newSingleThreadExecutor();
+
     }
 
     @Override
@@ -108,7 +126,14 @@ public class Page4Fragment extends Fragment {
         } else if (!comparisonDone) {
             checkAndCompareFaces();
         }
-
+        faceImageView.setOnClickListener(v -> {
+            Bitmap bitmap = ((BitmapDrawable) faceImageView.getDrawable()).getBitmap();
+            showImageFullscreen(bitmap);
+        });
+        docPortrait.setOnClickListener(v -> {
+            Bitmap bitmap = ((BitmapDrawable) docPortrait.getDrawable()).getBitmap();
+            showImageFullscreen(bitmap);
+        });
         return view;
     }
 
@@ -150,6 +175,30 @@ public class Page4Fragment extends Fragment {
         nationalityTextView = view.findViewById(R.id.nationalityTextView);
         docTypeTextView = view.findViewById(R.id.docTypeTextView);
         issuerAuthorityTextView = view.findViewById(R.id.issuerAuthorityTextView);
+
+        tvGivenName = view.findViewById(R.id.tvGivenName);
+        tvSurnameMrz = view.findViewById(R.id.tvSurnameMrz);
+        tvDobMrz = view.findViewById(R.id.tvDobMrz);
+        tvNationalityMrz = view.findViewById(R.id.tvNationalityMrz);
+        tvGenderMrz = view.findViewById(R.id.tvGenderMrz);
+
+        tvDocumentNumberMrz = view.findViewById(R.id.tvDocumentNumberMrz);
+        tvDateOfExpiryMrz = view.findViewById(R.id.tvDateOfExpiryMrz);
+        tvDocumentTypeMrz = view.findViewById(R.id.tvDocumentTypeMrz);
+        tvIssuingAuthorityMrz = view.findViewById(R.id.tvIssuingAuthorityMrz);
+        // Liaison avec les ImageView
+        iconSurname = view.findViewById(R.id.iconSurname);
+        iconGivenName =  view.findViewById(R.id.iconGivenName);
+        iconGender =  view.findViewById(R.id.iconGender);
+        iconDob =  view.findViewById(R.id.iconDob);
+        iconExpiryDate =  view.findViewById(R.id.iconExpiryDate);
+        iconDocNum =  view.findViewById(R.id.iconDocNum);
+        iconNationality =  view.findViewById(R.id.iconNationality);
+        iconDocType =  view.findViewById(R.id.iconDocType);
+        iconIssuer =  view.findViewById(R.id.iconIssuer);
+
+        scoreContainerPortraitSelfie = view.findViewById(R.id.scoreContainerPortraitSelfie);
+
     }
 
     private void setupFromArguments() {
@@ -165,20 +214,198 @@ public class Page4Fragment extends Fragment {
             }
 
             // Mettre à jour les informations textuelles
-            nameTextView.setText("Prénom: " + bundle.getString("name", ""));
-            surnameTextView.setText("Nom: " + bundle.getString("surname", ""));
-            genderTextView.setText("Sexe: " + bundle.getString("gender", ""));
-            birthDateTextView.setText("Date de naissance: " + bundle.getString("birthDate", ""));
-            expiryDateTextView.setText("Date d'expiration: " + bundle.getString("expiryDate", ""));
-            serialNumberTextView.setText("Numéro de série: " + bundle.getString("serialNumber", ""));
-            nationalityTextView.setText("Nationalité: " + bundle.getString("nationality", ""));
-            docTypeTextView.setText("Type de document: " + bundle.getString("docType", ""));
-            issuerAuthorityTextView.setText("Autorité émetrice: " + bundle.getString("issuerAuthority", ""));
+            nameTextView.setText(bundle.getString("name", ""));
+            surnameTextView.setText(bundle.getString("surname", ""));
+            genderTextView.setText(bundle.getString("gender", ""));
+            birthDateTextView.setText(bundle.getString("birthDate", ""));
+            expiryDateTextView.setText(bundle.getString("expiryDate", ""));
+            serialNumberTextView.setText(bundle.getString("serialNumber", ""));
+            nationalityTextView.setText(bundle.getString("nationality", ""));
+            docTypeTextView.setText(bundle.getString("docType", ""));
+            issuerAuthorityTextView.setText(bundle.getString("issuerAuthority", ""));
 
             customerId = bundle.getString("customerId");
+            fetchCustomerData();
         }
     }
 
+    private void fetchCustomerData() {
+        customerService.getCustomer(customerId, new CustomerService.ApiCallback() {
+            @Override
+            public void onSuccess(JSONObject response) {
+                if (getActivity() == null) return; // sécurité si fragment détaché
+
+                requireActivity().runOnUiThread(() -> {
+                    customerData = response; // Stocker les données
+                    Log.d(TAG, "Customer data fetched: " + response.toString());
+
+                    Toast.makeText(requireContext(), "Customer data loaded.", Toast.LENGTH_SHORT).show();
+
+                    try {
+                        displayCustomerData(response);   // ta méthode d’affichage
+                        updateFragmentData(response);   // ta méthode de mise à jour
+                        // fetchSimilarityScore();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing or displaying customer data", e);
+                        Toast.makeText(requireContext(), "Error parsing customer data", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                if (getActivity() == null) return; // sécurité
+
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(),
+                            "Error fetching customer data: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Failed to fetch customer data", e);
+                });
+            }
+        });
+    }
+    private void displayCustomerData(JSONObject response) {
+        try {
+            JSONObject customer = response.getJSONObject("customer");
+
+            // Champs MRZ
+            String surname = customer.getJSONObject("surname").optString("mrz", "");
+            String givenName = customer.getJSONObject("givenNames").optString("mrz", "");
+            String dob = customer.getJSONObject("dateOfBirth").optString("mrz", "");
+            String nationality = customer.getJSONObject("nationality").optString("mrz", "");
+            String gender = customer.getJSONObject("gender").optString("mrz", "");
+
+            // Transformer le genre
+            if ("M".equalsIgnoreCase(gender)) {
+                gender = "Homme";
+            } else if ("F".equalsIgnoreCase(gender)) {
+                gender = "Femme";
+            }
+
+            // Reformater les dates MRZ au format dd.MM.yyyy
+            dob = formatMrzDate(dob);
+
+            // Infos document
+            JSONObject document = customer.getJSONObject("document");
+            String documentNumber = document.getJSONObject("documentNumber").optString("mrz", "");
+            String dateOfExpiry = document.getJSONObject("dateOfExpiry").optString("mrz", "");
+            String issuingAuthority = document.getJSONObject("issuingAuthority").optString("mrz", "");
+
+            // Reformater la date d'expiration MRZ
+            dateOfExpiry = formatMrzDate(dateOfExpiry);
+
+            // Extraire documentCode de td3
+            String documentCode = "";
+            JSONObject mrz = document.optJSONObject("mrz");
+            if (mrz != null) {
+                JSONObject td3 = mrz.optJSONObject("td3");
+                if (td3 != null) {
+                    documentCode = td3.optString("documentCode", "");
+                    // Remplacer "P" par "Passeport"
+                    if ("P".equalsIgnoreCase(documentCode)) {
+                        documentCode = "Passeport";
+                    }
+                }
+            }
+
+            // Remplir les TextView MRZ
+            tvGivenName.setText(givenName);
+            tvSurnameMrz.setText(surname);
+            tvDobMrz.setText(dob);
+            tvNationalityMrz.setText(nationality);
+            tvGenderMrz.setText(gender);
+
+            tvDocumentNumberMrz.setText(documentNumber);
+            tvDateOfExpiryMrz.setText(dateOfExpiry);
+            tvDocumentTypeMrz.setText(documentCode);  // documentCode modifié si "P"
+            tvIssuingAuthorityMrz.setText(issuingAuthority);
+            compareFields();
+
+        } catch (Exception e) {
+            Log.e(TAG, "Erreur lors de l’affichage des données MRZ", e);
+            Toast.makeText(requireContext(), "Erreur affichage données MRZ", Toast.LENGTH_SHORT).show();
+        }
+    }
+    private void compareFields() {
+        compareTextViews(surnameTextView, tvSurnameMrz, iconSurname);             // Nom
+        compareTextViews(nameTextView, tvGivenName, iconGivenName);               // Prénom
+        compareTextViews(genderTextView, tvGenderMrz, iconGender);                // Sexe
+        compareTextViews(birthDateTextView, tvDobMrz, iconDob);                   // Date de naissance
+        compareTextViews(expiryDateTextView, tvDateOfExpiryMrz, iconExpiryDate);  // Date d’expiration
+        compareTextViews(serialNumberTextView, tvDocumentNumberMrz, iconDocNum);  // Numéro document
+        compareTextViews(nationalityTextView, tvNationalityMrz, iconNationality); // Nationalité
+        compareTextViews(docTypeTextView, tvDocumentTypeMrz, iconDocType);        // Type document
+        compareTextViews(issuerAuthorityTextView, tvIssuingAuthorityMrz, iconIssuer); // Autorité
+    }
+
+    /**
+     * Compare deux TextView : ajoute une icône ✅ ou ❌ selon compatibilité
+     */
+    private void compareTextViews(TextView tv1, TextView tv2, ImageView icon) {
+        String value1 = tv1.getText().toString().trim();
+        String value2 = tv2.getText().toString().trim();
+
+        if (!value1.isEmpty() && !value2.isEmpty()) {
+            boolean isOk = value1.equalsIgnoreCase(value2);
+
+            // Choisir la couleur
+            int color = isOk ? Color.parseColor("#4CAF50") : Color.parseColor("#F44336"); // vert / rouge
+
+            icon.setImageResource(R.drawable.ic_check_circle); // icône générique
+            icon.setColorFilter(color); // applique la couleur
+            icon.setVisibility(View.VISIBLE);
+        } else {
+            icon.setVisibility(View.INVISIBLE);
+        }
+    }
+
+
+    /**
+     * Reformate une date MRZ au format dd.MM.yyyy
+     */
+    private String formatMrzDate(String mrzDate) {
+        try {
+            if (mrzDate.contains("-")) {
+                // Format yyyy-M-d -> dd.MM.yyyy
+                SimpleDateFormat mrzFormat = new SimpleDateFormat("yyyy-M-d", Locale.getDefault());
+                Date date = mrzFormat.parse(mrzDate);
+                if (date != null) {
+                    SimpleDateFormat desiredFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                    return desiredFormat.format(date);
+                }
+            } else if (mrzDate.length() == 6) {
+                // Format MRZ court : yyMMdd -> dd.MM.yyyy
+                SimpleDateFormat mrzShortFormat = new SimpleDateFormat("yyMMdd", Locale.getDefault());
+                Date date = mrzShortFormat.parse(mrzDate);
+                if (date != null) {
+                    SimpleDateFormat desiredFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                    return desiredFormat.format(date);
+                }
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return mrzDate; // fallback si erreur
+    }
+    private void updateFragmentData(JSONObject response) {
+        // Juste stocker la réponse brute dans une variable
+        this.customerData = response;
+    }
+    private void showImageFullscreen(Bitmap bitmap) {
+        if (getActivity() == null) return; // sécurité
+
+        Dialog dialog = new Dialog(getActivity(), android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        dialog.setContentView(R.layout.dialog_fullscreen_image);
+
+        ImageView imageView = dialog.findViewById(R.id.dialogImageView);
+        imageView.setImageBitmap(bitmap);
+
+        // Fermer au clic
+        imageView.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
     private void checkAndCompareFaces() {
         if (faceImageBitmap != null && cachedPortraitBitmap != null && !comparisonInProgress && !comparisonDone) {
             compareFaces();
@@ -247,14 +474,49 @@ public class Page4Fragment extends Fragment {
     }
 
     private void updateSimilarityUI(int percentage) {
+        // Mettre à jour le texte
         similarityScoreTextView.setText("Similarité: " + percentage + "%");
 
+        int bgColor;
+        int textColor;
+
+        // Appliquer la logique de couleur selon le pourcentage
         if (percentage >= 80) {
+            bgColor = ContextCompat.getColor(requireContext(), R.color.score_perfect_bg);
+            textColor = ContextCompat.getColor(requireContext(), R.color.score_perfect_text);
             Toast.makeText(getContext(), "Fort taux de similarité (" + percentage + "%)", Toast.LENGTH_SHORT).show();
         } else if (percentage >= 50) {
+            bgColor = ContextCompat.getColor(requireContext(), R.color.score_medium_bg);
+            textColor = ContextCompat.getColor(requireContext(), R.color.score_medium_text);
             Toast.makeText(getContext(), "Similarité moyenne (" + percentage + "%)", Toast.LENGTH_SHORT).show();
         } else {
+            bgColor = ContextCompat.getColor(requireContext(), R.color.score_low_bg);
+            textColor = ContextCompat.getColor(requireContext(), R.color.score_low_text);
             Toast.makeText(getContext(), "Faible taux de similarité (" + percentage + "%)", Toast.LENGTH_SHORT).show();
+        }
+
+        // Mettre à jour la couleur de fond du conteneur
+        if (scoreContainerPortraitSelfie.getBackground() instanceof GradientDrawable) {
+            ((GradientDrawable) scoreContainerPortraitSelfie.getBackground()).setColor(bgColor);
+        } else {
+            scoreContainerPortraitSelfie.setBackgroundColor(bgColor);
+        }
+
+        // Mettre à jour la couleur du texte
+        similarityScoreTextView.setTextColor(textColor);
+    }
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // Réappliquer le score et la couleur si déjà calculé
+        if (similarityScore != -1 && scoreContainerPortraitSelfie != null && similarityScoreTextView != null) {
+            updateSimilarityUI(similarityScore);
+        }
+
+        // Vérifier si la comparaison doit être relancée
+        if (!comparisonDone && faceImageBitmap != null && cachedPortraitBitmap != null) {
+            checkAndCompareFaces();
         }
     }
 

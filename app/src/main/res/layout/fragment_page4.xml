@@ -9,7 +9,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-
         <!-- Images côte à côte -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -18,6 +17,7 @@
             android:orientation="horizontal"
             android:layout_marginBottom="16dp">
 
+            <!-- Photo RFID -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -39,6 +39,7 @@
                     android:scaleType="fitCenter"/>
             </LinearLayout>
 
+            <!-- Photo Document -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -61,108 +62,221 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Résultat de la comparaison -->
-        <TextView
-            android:id="@+id/similarityScoreTextView"
+        <LinearLayout
+            android:id="@+id/scoreContainerPortraitSelfie"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Similarité: en cours..."
-            android:textSize="18sp"
-            android:textColor="@android:color/white"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginBottom="24dp"
             android:padding="8dp"
-            android:background="@color/purple_app_bar"/>
+            android:orientation="vertical"
+            android:background="@color/white"
+            android:layout_marginBottom="16dp">
 
-        <!-- Séparateur -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@android:color/darker_gray"
-            android:layout_marginBottom="16dp"/>
+            <TextView
+                android:id="@+id/similarityScoreTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Similarité: en cours..."
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textColor="@color/purple_app_bar"/>
+        </LinearLayout>
 
-        <!-- Titre pour la section d'informations -->
-        <TextView
+        <!-- Tableau comparatif -->
+        <TableLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Informations du document"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp"/>
+            android:layout_height="wrap_content">
 
-        <!-- Informations textuelles -->
-        <TextView
-            android:id="@+id/nameTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Prénom : "
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp"/>
+            <!-- En-tête -->
+            <TableRow>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text=""
+                    android:textStyle="bold"/>
 
-        <TextView
-            android:id="@+id/surnameTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Nom : "
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp"/>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Données puce"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textColor="@android:color/black"
+                    android:padding="4dp"/>
 
-        <TextView
-            android:id="@+id/genderTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Sexe : "
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp"/>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Données document"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textColor="@android:color/black"
+                    android:padding="4dp"/>
 
-        <TextView
-            android:id="@+id/birthDateTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Date de naissance : "
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp"/>
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:text="Match"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textColor="@android:color/black"
+                    android:padding="4dp"/>
+            </TableRow>
 
-        <TextView
-            android:id="@+id/expiryDateTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Date d'expiration : "
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp"/>
+            <!-- Nom -->
+            <TableRow>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Nom :" android:padding="4dp"/>
+                <TextView
+                    android:id="@+id/surnameTextView"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:textColor="@android:color/black"
+                    android:padding="4dp"/>
+                <TextView
+                    android:id="@+id/tvSurnameMrz"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:textColor="@android:color/black"
+                    android:padding="4dp"/>
+                <ImageView
+                    android:id="@+id/iconSurname"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"/>
+            </TableRow>
 
-        <TextView
-            android:id="@+id/serialNumberTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Numéro de série : "
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp"/>
+            <!-- Prénom -->
+            <TableRow>
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Prénom :" android:padding="4dp"/>
+                <TextView android:id="@+id/nameTextView" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <TextView android:id="@+id/tvGivenName" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <ImageView
+                    android:id="@+id/iconGivenName"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"/>
+            </TableRow>
 
-        <TextView
-            android:id="@+id/nationalityTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Nationalité : "
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp"/>
+            <!-- Sexe -->
+            <TableRow>
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Sexe :" android:padding="4dp"/>
+                <TextView android:id="@+id/genderTextView" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <TextView android:id="@+id/tvGenderMrz" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <ImageView
+                    android:id="@+id/iconGender"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"/>
+            </TableRow>
 
-        <TextView
-            android:id="@+id/docTypeTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Type de document : "
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp"/>
+            <!-- Date de naissance -->
+            <TableRow>
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Date de naissance :" android:padding="4dp"/>
+                <TextView android:id="@+id/birthDateTextView" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <TextView android:id="@+id/tvDobMrz" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <ImageView
+                    android:id="@+id/iconDob"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"/>
+            </TableRow>
 
-        <TextView
-            android:id="@+id/issuerAuthorityTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Autorité émetrice : "
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp"/>
+            <!-- Date d'expiration -->
+            <TableRow>
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Date d'expiration :" android:padding="4dp"/>
+                <TextView android:id="@+id/expiryDateTextView" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <TextView android:id="@+id/tvDateOfExpiryMrz" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <ImageView
+                    android:id="@+id/iconExpiryDate"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"/>
+            </TableRow>
+
+            <!-- Numéro de document -->
+            <TableRow>
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Numéro de document :" android:padding="4dp"/>
+                <TextView android:id="@+id/serialNumberTextView" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <TextView android:id="@+id/tvDocumentNumberMrz" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <ImageView
+                    android:id="@+id/iconDocNum"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"/>
+            </TableRow>
+
+            <!-- Nationalité -->
+            <TableRow>
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Nationalité :" android:padding="4dp"/>
+                <TextView android:id="@+id/nationalityTextView" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <TextView android:id="@+id/tvNationalityMrz" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <ImageView
+                    android:id="@+id/iconNationality"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"/>
+            </TableRow>
+
+            <!-- Type de document -->
+            <TableRow>
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Type de document :" android:padding="4dp"/>
+                <TextView android:id="@+id/docTypeTextView" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <TextView android:id="@+id/tvDocumentTypeMrz" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <ImageView
+                    android:id="@+id/iconDocType"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"/>
+            </TableRow>
+
+            <!-- Autorité émettrice -->
+            <TableRow>
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Autorité émettrice :" android:padding="4dp"/>
+                <TextView android:id="@+id/issuerAuthorityTextView" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <TextView android:id="@+id/tvIssuingAuthorityMrz" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:gravity="center" android:textColor="@android:color/black" android:padding="4dp"/>
+                <ImageView
+                    android:id="@+id/iconIssuer"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"/>
+            </TableRow>
+
+        </TableLayout>
 
     </LinearLayout>
 </ScrollView>

@@ -5,8 +5,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="@color/white"
+    tools:context=".YourActivity">
 
+    <!-- Bouton Fermer en haut à droite -->
     <ImageButton
         android:id="@+id/btnClose"
         android:layout_width="56dp"
@@ -18,9 +20,10 @@
         app:tint="?attr/colorOnSurface"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="8dp"
-        android:layout_marginTop="8dp"/>
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"/>
 
+    <!-- Container du titre, sous-titre et image portrait -->
     <LinearLayout
         android:id="@+id/text_container"
         android:layout_width="0dp"
@@ -31,8 +34,10 @@
         app:layout_constraintBottom_toTopOf="@+id/btnLaunchCamera"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVertical_chainStyle="packed">
+        app:layout_constraintVertical_chainStyle="packed"
+        android:paddingHorizontal="24dp">
 
+        <!-- Titre principal -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
@@ -41,8 +46,10 @@
             android:textColor="?attr/colorOnSurface"
             android:textSize="28sp"
             android:textStyle="bold"
+            android:layout_marginBottom="4dp"
             tools:text="Démarrage de selfie !"/>
 
+        <!-- Sous-titre -->
         <TextView
             android:id="@+id/tvSubtitle"
             android:layout_width="wrap_content"
@@ -50,10 +57,21 @@
             android:text="Prêt"
             android:textColor="?attr/colorOnSurface"
             android:textSize="20sp"
-            android:layout_marginTop="4dp"
+            android:layout_marginBottom="16dp"
             tools:text="Prêt"/>
+
+        <!-- Image portrait -->
+        <ImageView
+            android:id="@+id/imageViewPortrait"
+            android:layout_width="181dp"
+            android:layout_height="172dp"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            tools:srcCompat="@tools:sample/avatars" />
+
     </LinearLayout>
 
+    <!-- Bouton Lancer en bas -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnLaunchCamera"
         android:layout_width="0dp"
@@ -69,8 +87,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginHorizontal="32dp"
-        app:layout_constraintVertical_bias="0.75"
-        android:layout_marginTop="48dp"
-        />
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="32dp"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
