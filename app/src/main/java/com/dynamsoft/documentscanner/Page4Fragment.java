@@ -213,16 +213,16 @@ public class Page4Fragment extends Fragment {
                 }
             }
 
-            // Mettre à jour les informations textuelles
-            nameTextView.setText(bundle.getString("name", ""));
-            surnameTextView.setText(bundle.getString("surname", ""));
-            genderTextView.setText(bundle.getString("gender", ""));
-            birthDateTextView.setText(bundle.getString("birthDate", ""));
-            expiryDateTextView.setText(bundle.getString("expiryDate", ""));
-            serialNumberTextView.setText(bundle.getString("serialNumber", ""));
-            nationalityTextView.setText(bundle.getString("nationality", ""));
-            docTypeTextView.setText(bundle.getString("docType", ""));
-            issuerAuthorityTextView.setText(bundle.getString("issuerAuthority", ""));
+            nameTextView.setText(getNonEmpty(bundle.getString("name")));
+            surnameTextView.setText(getNonEmpty(bundle.getString("surname")));
+            genderTextView.setText(getNonEmpty(bundle.getString("gender")));
+            birthDateTextView.setText(getNonEmpty(bundle.getString("birthDate")));
+            expiryDateTextView.setText(getNonEmpty(bundle.getString("expiryDate")));
+            serialNumberTextView.setText(getNonEmpty(bundle.getString("serialNumber")));
+            nationalityTextView.setText(getNonEmpty(bundle.getString("nationality")));
+            docTypeTextView.setText(getNonEmpty(bundle.getString("docType")));
+            issuerAuthorityTextView.setText(getNonEmpty(bundle.getString("issuerAuthority")));
+
 
             customerId = bundle.getString("customerId");
             fetchCustomerData();
@@ -310,7 +310,7 @@ public class Page4Fragment extends Fragment {
             }
 
             // Remplir les TextView MRZ
-            tvGivenName.setText(givenName);
+          /*  tvGivenName.setText(givenName);
             tvSurnameMrz.setText(surname);
             tvDobMrz.setText(dob);
             tvNationalityMrz.setText(nationality);
@@ -319,7 +319,18 @@ public class Page4Fragment extends Fragment {
             tvDocumentNumberMrz.setText(documentNumber);
             tvDateOfExpiryMrz.setText(dateOfExpiry);
             tvDocumentTypeMrz.setText(documentCode);  // documentCode modifié si "P"
-            tvIssuingAuthorityMrz.setText(issuingAuthority);
+            tvIssuingAuthorityMrz.setText(issuingAuthority);*/
+
+            tvGivenName.setText(getNonEmpty(givenName));
+            tvSurnameMrz.setText(getNonEmpty(surname));
+            tvDobMrz.setText(getNonEmpty(dob));
+            tvNationalityMrz.setText(getNonEmpty(nationality));
+            tvGenderMrz.setText(getNonEmpty(gender));
+
+            tvDocumentNumberMrz.setText(getNonEmpty(documentNumber));
+            tvDateOfExpiryMrz.setText(getNonEmpty(dateOfExpiry));
+            tvDocumentTypeMrz.setText(getNonEmpty(documentCode));
+            tvIssuingAuthorityMrz.setText(getNonEmpty(issuingAuthority));
             compareFields();
 
         } catch (Exception e) {
@@ -607,5 +618,9 @@ public class Page4Fragment extends Fragment {
         if (faceImageBitmap != null) {
             faceImageBitmap.recycle();
         }
+    }
+
+    private String getNonEmpty(String value) {
+        return (value != null && !value.trim().isEmpty()) ? value : "-";
     }
 }

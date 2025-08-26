@@ -12,6 +12,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -39,6 +40,17 @@ public class HomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        Toolbar toolbar = findViewById(R.id.simpleToolbar);
+        setSupportActionBar(toolbar);
+
+        // Supprimer le titre par défaut
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+        // Définir le titre perso
+        TextView toolbarTitle = findViewById(R.id.toolbarTitle);
+        toolbarTitle.setText("Lecture de Documents SMLTP");
+
 
         customerService = new CustomerService();
 

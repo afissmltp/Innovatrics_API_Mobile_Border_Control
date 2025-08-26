@@ -91,8 +91,8 @@ public class ReadNFCActivity extends AppCompatActivity {
         customerService = new CustomerService();
         customerId = getIntent().getStringExtra("customerId");
 
-        getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
-        getSupportActionBar().setCustomView(R.layout.action_bar_title);
+       /* getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
+        getSupportActionBar().setCustomView(R.layout.action_bar_title);*/
 
         mainLayout = findViewById(R.id.main_layout);
         loadingLayout = findViewById(R.id.loading_layout);
@@ -444,6 +444,7 @@ public class ReadNFCActivity extends AppCompatActivity {
 
         intent.putExtra("openFragmentIndex", 3);
         startActivity(intent);
+        finish();
     }
 
     private void clearViews() {

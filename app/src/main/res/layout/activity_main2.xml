@@ -16,7 +16,7 @@
         android:gravity="center"
         android:orientation="vertical"
         android:padding="24dp"
-        android:visibility="gone">
+        android:visibility="visible">
 
         <!-- Icône NFC -->
         <ImageView
@@ -72,7 +72,7 @@
         android:layout_gravity="center"
         android:orientation="vertical"
         android:padding="24dp"
-        android:visibility="visible">
+        android:visibility="gone">
 
         <ImageView
             android:id="@+id/image_nfc2"

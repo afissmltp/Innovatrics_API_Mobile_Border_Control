@@ -11,6 +11,7 @@ import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
 
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,6 +19,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
@@ -66,6 +68,7 @@ public class CustomerDataActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_customerdata);
+
         customerService = new CustomerService();
         initializeViews();
 
@@ -81,7 +84,29 @@ public class CustomerDataActivity extends AppCompatActivity {
             Log.e(TAG, "Customer ID is null or empty.");
             finish(); //
         }
+        Toolbar toolbar = findViewById(R.id.simpleToolbar);
+        setSupportActionBar(toolbar);
 
+        // Supprimer le titre par défaut
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+        // Définir le titre perso
+        TextView toolbarTitle = findViewById(R.id.toolbarTitle);
+        toolbarTitle.setText("Contrôle identité");
+
+        ImageButton homebtn = findViewById(R.id.homeButton);
+        homebtn.setOnClickListener(v -> {
+            Intent intent = new Intent(this, HomeActivity.class);
+            startActivity(intent);
+        });
+
+        ImageButton docScanButton = findViewById(R.id.docScanButton);
+        homebtn.setOnClickListener(v -> {
+            Intent intent = new Intent(this, HomeActivity.class);
+            startActivity(intent);
+        });
+
+        docScanButton.setOnClickListener(v -> onScanButtonClicked());
 
         // 📌 Récupérer les données reçues
         byte[] faceImageBytes = getIntent().getByteArrayExtra("faceImage");
@@ -173,7 +198,11 @@ public class CustomerDataActivity extends AppCompatActivity {
 
 
     }
-
+    private void onScanButtonClicked() {
+        Intent intent = new Intent(this, CameraActivity2.class);
+        intent.putExtra("customerId", customerId);
+        startActivity(intent);
+    }
     public void showPage3Fragment() {
         if (mViewPager != null) {
             mViewPager.setCurrentItem(2, true);

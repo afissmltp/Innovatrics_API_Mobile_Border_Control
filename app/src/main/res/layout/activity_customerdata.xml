@@ -7,13 +7,23 @@
     android:layout_height="match_parent"
     tools:context=".CustomerDataActivity">
 
+    <!-- Inclusion de la toolbar -->
+    <include
+        android:id="@+id/simpleToolbar"
+        layout="@layout/toolbar_custom"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
     <!-- Contenu scrollable -->
     <ScrollView
         android:id="@+id/scroll_content"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/simpleToolbar"
         app:layout_constraintBottom_toTopOf="@id/bottomBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">

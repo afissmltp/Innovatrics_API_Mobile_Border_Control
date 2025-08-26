@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SMLTP Document Reader</string>
+    <string name="app_name">Lecture de Documents SMLTP</string>
     <string name="title_activity_viewer">ViewerActivity</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>

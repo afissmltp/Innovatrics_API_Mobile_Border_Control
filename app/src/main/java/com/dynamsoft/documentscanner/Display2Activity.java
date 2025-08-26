@@ -17,6 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
@@ -49,6 +50,31 @@ public class Display2Activity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_display2);
 
+        Toolbar toolbar = findViewById(R.id.simpleToolbar);
+        setSupportActionBar(toolbar);
+
+        // Supprimer le titre par défaut
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+        // Définir le titre perso
+        TextView toolbarTitle = findViewById(R.id.toolbarTitle);
+        toolbarTitle.setText("Vérification de document");
+
+        ImageButton homebtn = findViewById(R.id.homeButton);
+        homebtn.setOnClickListener(v -> {
+            Intent intent = new Intent(this, HomeActivity.class);
+            startActivity(intent);
+        });
+
+        ImageButton docScanButton = findViewById(R.id.docScanButton);
+        homebtn.setOnClickListener(v -> {
+            Intent intent = new Intent(this, HomeActivity.class);
+            startActivity(intent);
+        });
+
+        docScanButton.setOnClickListener(v -> onScanButtonClicked());
+
+
         initializeViews();
         setupCustomerId();
         setupButtonListeners();
@@ -78,6 +104,12 @@ public class Display2Activity extends AppCompatActivity {
                 selfieBtn.setVisibility(View.GONE); // Cacher le bouton
             }
         }
+    }
+
+    private void onScanButtonClicked() {
+        Intent intent = new Intent(this, CameraActivity2.class);
+        intent.putExtra("customerId", customerId);
+        startActivity(intent);
     }
     private void showImageFullscreen(Bitmap bitmap) {
         Dialog dialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
