@@ -1,12 +1,10 @@
 package com.dynamsoft.documentscanner;
 
 import android.app.Dialog;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
-
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,19 +12,14 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
 
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
-
 
 public class Page1Fragment extends Fragment {
 
@@ -36,8 +29,17 @@ public class Page1Fragment extends Fragment {
     private String customerId;
     private JSONObject customerData;
 
+    // Use a static cache to persist the image and its ID across fragment instances
     private static Bitmap cachedDocumentBitmap = null;
+    private static String cachedCustomerId = null;
 
+    /**
+     * Factory method to create a new instance of this fragment.
+     *
+     * @param customerData The customer data to display.
+     * @param customerId The ID of the customer.
+     * @return A new instance of Page1Fragment.
+     */
     public static Page1Fragment newInstance(JSONObject customerData, String customerId) {
         Page1Fragment fragment = new Page1Fragment();
         Bundle args = new Bundle();
@@ -45,6 +47,15 @@ public class Page1Fragment extends Fragment {
         args.putString("customerId", customerId);
         fragment.setArguments(args);
         return fragment;
+    }
+
+    /**
+     * Public static method to clear the document image cache.
+     * This should be called from the Activity whenever a new document is scanned.
+     */
+    public static void clearDocumentImageCache() {
+        cachedDocumentBitmap = null;
+        cachedCustomerId = null;
     }
 
     @Override
@@ -91,8 +102,9 @@ public class Page1Fragment extends Fragment {
 
         return view;
     }
+
     private void showImageFullscreen(Bitmap bitmap) {
-        if (getActivity() == null) return; // sécurité
+        if (getActivity() == null) return;
 
         Dialog dialog = new Dialog(getActivity(), android.R.style.Theme_Black_NoTitleBar_Fullscreen);
         dialog.setContentView(R.layout.dialog_fullscreen_image);
@@ -100,11 +112,11 @@ public class Page1Fragment extends Fragment {
         ImageView imageView = dialog.findViewById(R.id.dialogImageView);
         imageView.setImageBitmap(bitmap);
 
-        // Fermer au clic
         imageView.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
     }
+
     private void displayCustomerData(JSONObject customerData) {
         try {
             JSONObject customer = customerData.getJSONObject("customer");
@@ -138,9 +150,10 @@ public class Page1Fragment extends Fragment {
     private void loadDocumentFrontImage() {
         if (customerId == null || customerId.isEmpty()) return;
 
-        if (cachedDocumentBitmap != null) {
+        // Check if we already have the image for THIS customerId
+        if (cachedDocumentBitmap != null && customerId.equals(cachedCustomerId)) {
             documentImageView.setImageBitmap(cachedDocumentBitmap);
-            return;
+            return; // Exit to prevent API call
         }
 
         customerService.getDocumentFrontImage(customerId, new CustomerService.ApiCallback() {
@@ -155,6 +168,7 @@ public class Page1Fragment extends Fragment {
                         Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
                         if (bitmap != null) {
                             cachedDocumentBitmap = bitmap;
+                            cachedCustomerId = customerId; // Store the corresponding ID
                             CustomerDataActivity.rectoBitmap = bitmap;
                             documentImageView.setImageBitmap(bitmap);
                         }

@@ -29,6 +29,16 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
+                    <!-- Updated button ID here -->
+                    <Button
+                        android:id="@+id/btnCaptureSelfie"
+                        android:layout_width="184dp"
+                        android:layout_height="wrap_content"
+                        android:text="Capturer un selfie"
+                        android:layout_gravity="center"
+                        android:backgroundTint="@color/purple_app_bar"
+                        android:textColor="@color/white"/>
+
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

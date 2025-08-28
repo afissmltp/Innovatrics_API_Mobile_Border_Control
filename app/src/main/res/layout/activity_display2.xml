@@ -44,7 +44,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Lire"
+            android:text="Détails"
             android:layout_marginStart="8dp"/>
     </LinearLayout>
 
@@ -198,7 +198,7 @@
                     android:id="@+id/textConsistencyStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Texte : COHÉRENT"
+                    android:text="Cohérence du texte : COHÉRENT"
                     android:textSize="16sp"
                     android:textColor="@android:color/black"/>
             </LinearLayout>
