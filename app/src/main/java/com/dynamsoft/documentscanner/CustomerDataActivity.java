@@ -12,12 +12,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
-import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -25,14 +24,13 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.viewpager.widget.ViewPager;
-
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
+import com.dynamsoft.documentscanner.model.Page1FragmentData;
+import com.dynamsoft.documentscanner.model.PdfGenerator;
 import com.dynamsoft.documentscanner.ui.ReadNFCActivity;
 import com.google.android.material.tabs.TabLayout;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -43,6 +41,7 @@ import java.util.concurrent.Executors;
 
 public class CustomerDataActivity extends AppCompatActivity {
     private static final String TAG = "CustomerDataActivity";
+    private static final int PDF_SHARE_REQUEST_CODE = 3001; // Code de requête unique pour le partage PDF
 
     private TextView tvName, tvGender, tvSurname, tvAge;
     private CustomerService customerService;
@@ -100,6 +99,9 @@ public class CustomerDataActivity extends AppCompatActivity {
 
         ImageButton docScanButton = findViewById(R.id.docScanButton);
         docScanButton.setOnClickListener(v -> onScanButtonClicked());
+
+        ImageButton btnGeneratePdf = findViewById(R.id.btnGeneratePdf);
+        //btnGeneratePdf.setOnClickListener(v -> generatePdfFromFragments());
 
         // Initialisation des fragments
         byte[] faceImageBytes = getIntent().getByteArrayExtra("faceImage");
@@ -405,6 +407,13 @@ public class CustomerDataActivity extends AppCompatActivity {
             }
             return fragments[position];
         }
+
+        // Add a public method to retrieve the fragment instance by position.
+      /*  public Fragment getFragment(int position) {
+            return fragments[position];
+        }*/
+
+
         @Override
         public int getCount() {
             return fragments.length;
@@ -447,4 +456,20 @@ public class CustomerDataActivity extends AppCompatActivity {
         rfidSimilarityScore = null;
         super.onDestroy();
     }
+
+   /* public void generatePdfFromFragments() {
+        // Correctly get the fragment from the adapter
+        MyPagerAdapter adapter = (MyPagerAdapter) mViewPager.getAdapter();
+        Page1Fragment page1Fragment = (Page1Fragment) adapter.getFragment(0);
+
+        if (page1Fragment != null) {
+            Page1FragmentData page1Data = page1Fragment.getData();
+
+            // Créer une instance de PdfGenerator en passant le contexte
+            PdfGenerator pdfGenerator = new PdfGenerator(this); // <-- L'instance a besoin du contexte
+
+            // Appeler createPdf en passant les données. Le contexte est déjà dans le générateur
+            pdfGenerator.createPdf(page1Data);
+        }
+    }*/
 }

@@ -34,7 +34,14 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:scaleType="centerInside"
         android:src="@drawable/ic_nfc" />
-
+    <ImageButton
+        android:id="@+id/btnGeneratePdf"
+        android:layout_width="45dp"
+        android:layout_height="28dp"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_pdf" />
 
 
 </LinearLayout>

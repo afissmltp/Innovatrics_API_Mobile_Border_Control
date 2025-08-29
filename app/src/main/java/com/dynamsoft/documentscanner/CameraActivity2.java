@@ -9,57 +9,32 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.ImageCapture;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
 import com.bumptech.glide.Glide;
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
-
 import org.json.JSONObject;
-
 import java.io.ByteArrayOutputStream;
-
 import java.io.File;
 import android.os.Environment;
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Bundle;
-import android.os.Environment;
-import android.util.Base64;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
-import com.bumptech.glide.Glide;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
-
-import org.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.util.concurrent.ExecutionException;
 public class CameraActivity2 extends AppCompatActivity {
 
@@ -68,12 +43,16 @@ public class CameraActivity2 extends AppCompatActivity {
     private CustomerService customerService;
     private String customerId;
     private ImageCapture imageCapture;
+    private File photoFile; // Garder une référence au fichier photo
 
     private PreviewView previewView;
+    private ImageView previewImageView; // Nouvelle ImageView pour prévisualisation
+    private LinearLayout confirmationLayout; // Layout avec boutons OK/Réessayer
     private ImageView docUpload;
     private TextView uploadText;
     private ProgressBar progressBar;
-    private Button captureButton;
+    private FloatingActionButton captureButton;
+    private Button retryButton, confirmButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,17 +64,23 @@ public class CameraActivity2 extends AppCompatActivity {
 
         // Views
         previewView = findViewById(R.id.previewView);
+        previewImageView = findViewById(R.id.previewImageView);
+        confirmationLayout = findViewById(R.id.confirmationLayout);
         docUpload = findViewById(R.id.doc_upload);
         uploadText = findViewById(R.id.upload_text);
         progressBar = findViewById(R.id.progressBar);
         captureButton = findViewById(R.id.captureButton);
+        retryButton = findViewById(R.id.retryButton);
+        confirmButton = findViewById(R.id.confirmButton);
 
         // Au départ, masquer ImageView, texte et ProgressBar
+        previewImageView.setVisibility(View.GONE);
+        confirmationLayout.setVisibility(View.GONE);
         docUpload.setVisibility(View.GONE);
         uploadText.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
 
-        // Charger le GIF pour l'upload (mais ne sera affiché qu'après capture)
+        // Charger le GIF pour l'upload (mais ne sera affiché qu'après confirmation)
         Glide.with(this)
                 .asGif()
                 .load(R.drawable.telecharger)
@@ -113,6 +98,12 @@ public class CameraActivity2 extends AppCompatActivity {
 
         // Bouton capture
         captureButton.setOnClickListener(v -> takePhoto());
+
+        // Bouton réessayer
+        retryButton.setOnClickListener(v -> retryCapture());
+
+        // Bouton confirmer
+        confirmButton.setOnClickListener(v -> confirmAndUpload());
     }
 
     @Override
@@ -158,7 +149,7 @@ public class CameraActivity2 extends AppCompatActivity {
     }
 
     private void takePhoto() {
-        File photoFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+        photoFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES),
                 "document_" + System.currentTimeMillis() + ".jpg");
 
         ImageCapture.OutputFileOptions outputOptions =
@@ -168,36 +159,18 @@ public class CameraActivity2 extends AppCompatActivity {
                 new ImageCapture.OnImageSavedCallback() {
                     @Override
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-
-                        // Masquer caméra et bouton
+                        // Masquer caméra et bouton de capture
                         previewView.setVisibility(View.GONE);
                         captureButton.setVisibility(View.GONE);
 
-                        // Afficher GIF loader et ProgressBar
-                        docUpload.setVisibility(View.VISIBLE);
-                        uploadText.setVisibility(View.VISIBLE);
-                        progressBar.setVisibility(View.VISIBLE);
+                        // Afficher la prévisualisation et les boutons de confirmation
+                        previewImageView.setVisibility(View.VISIBLE);
+                        confirmationLayout.setVisibility(View.VISIBLE);
 
-                        // Charger le GIF pour l’upload
+                        // Charger l'image capturée dans l'ImageView de prévisualisation
                         Glide.with(CameraActivity2.this)
-                                .asGif()
-                                .load(R.drawable.telecharger)
-                                .into(docUpload);
-
-                        try {
-                            // Lire le fichier photo mais ne pas l’afficher
-                            Bitmap bitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
-
-                            // Redimensionner pour Base64
-                            Bitmap resized = resizeBitmap(bitmap, 1080, 1080);
-                            String base64Image = convertBitmapToBase64(resized);
-
-                            // Envoyer l’image
-                            uploadDocument(base64Image);
-
-                        } catch (Exception e) {
-                            Toast.makeText(CameraActivity2.this, "Erreur traitement image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
+                                .load(photoFile)
+                                .into(previewImageView);
                     }
 
                     @Override
@@ -207,6 +180,50 @@ public class CameraActivity2 extends AppCompatActivity {
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    private void retryCapture() {
+        // Cacher la prévisualisation et les boutons de confirmation
+        previewImageView.setVisibility(View.GONE);
+        confirmationLayout.setVisibility(View.GONE);
+
+        // Réafficher la caméra et le bouton de capture
+        previewView.setVisibility(View.VISIBLE);
+        captureButton.setVisibility(View.VISIBLE);
+    }
+
+    private void confirmAndUpload() {
+        // Cacher la prévisualisation et les boutons de confirmation
+        previewImageView.setVisibility(View.GONE);
+        confirmationLayout.setVisibility(View.GONE);
+
+        // Afficher GIF loader et ProgressBar
+        docUpload.setVisibility(View.VISIBLE);
+        uploadText.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.VISIBLE);
+
+        // Charger le GIF pour l'upload
+        Glide.with(CameraActivity2.this)
+                .asGif()
+                .load(R.drawable.telecharger)
+                .into(docUpload);
+
+        try {
+            // Lire le fichier photo
+            Bitmap bitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
+
+            // Redimensionner pour Base64
+            Bitmap resized = resizeBitmap(bitmap, 1080, 1080);
+            String base64Image = convertBitmapToBase64(resized);
+
+            // Envoyer l'image
+            uploadDocument(base64Image);
+
+        } catch (Exception e) {
+            Toast.makeText(CameraActivity2.this, "Erreur traitement image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            // En cas d'erreur, revenir à l'écran de capture
+            retryCapture();
+        }
     }
 
     private Bitmap resizeBitmap(Bitmap bitmap, int maxWidth, int maxHeight) {
@@ -248,150 +265,4 @@ public class CameraActivity2 extends AppCompatActivity {
             }
         });
     }
-  /*  private static final int CAMERA_REQUEST_CODE = 100;
-    private static final int CAMERA_PERMISSION_REQUEST_CODE = 101;
-    private CustomerService customerService;
-    private String customerId ;
-    private Uri photoUri; // Uri vers le fichier temporaire
-
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_document_upload); // Vous devrez créer ce layout
-
-        customerService = new CustomerService();
-        customerId = getIntent().getStringExtra("customerId");
-
-        // Vérifier et demander la permission de la caméra
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.CAMERA},
-                    CAMERA_PERMISSION_REQUEST_CODE);
-        } else {
-            openCamera();
-        }
-
-        ImageView imageView = findViewById(R.id.doc_upload);
-        Glide.with(this) // 'this' peut être Activity ou Fragment
-                .asGif()    // indique que c'est un GIF animé
-                .load(R.drawable.telecharger) // ton GIF dans res/drawable
-                .into(imageView);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                openCamera();
-            } else {
-                Toast.makeText(this, "La permission de la caméra est nécessaire", Toast.LENGTH_SHORT).show();
-                finish();
-            }
-        }
-    }
-
-    private void openCamera() {
-        try {
-            File photoFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES),
-                    "document_" + System.currentTimeMillis() + ".jpg");
-            photoUri = FileProvider.getUriForFile(this,
-                    getPackageName() + ".fileprovider", photoFile);
-
-            Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
-
-            if (cameraIntent.resolveActivity(getPackageManager()) != null) {
-                startActivityForResult(cameraIntent, CAMERA_REQUEST_CODE);
-            } else {
-                Toast.makeText(this, "Aucune application caméra trouvée", Toast.LENGTH_SHORT).show();
-                finish();
-            }
-        } catch (Exception e) {
-            Toast.makeText(this, "Erreur ouverture caméra: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            finish();
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == CAMERA_REQUEST_CODE && resultCode == RESULT_OK) {
-            if (photoUri != null) {
-                try {
-                    // Lire le fichier en pleine résolution
-                    Bitmap fullPhoto = MediaStore.Images.Media.getBitmap(this.getContentResolver(), photoUri);
-
-                    // Redimensionner l'image pour accélérer l'upload
-                    Bitmap resizedPhoto = resizeBitmap(fullPhoto, 1080, 1080);
-
-                    // Convertir en base64
-                    String base64Image = convertBitmapToBase64(resizedPhoto);
-
-                    // Envoyer l'image
-                    uploadDocument(base64Image);
-
-                } catch (Exception e) {
-                    Toast.makeText(this, "Erreur lecture image: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    finish();
-                }
-            }
-        } else {
-            finish();
-        }
-    }
-
-    // Redimensionne un bitmap en conservant les proportions
-    private Bitmap resizeBitmap(Bitmap bitmap, int maxWidth, int maxHeight) {
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        float ratio = Math.min((float) maxWidth / width, (float) maxHeight / height);
-        int newWidth = Math.round(width * ratio);
-        int newHeight = Math.round(height * ratio);
-        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
-    }
-
-    // Convertit un bitmap en Base64 avec compression 80%
-    private String convertBitmapToBase64(Bitmap bitmap) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, byteArrayOutputStream);
-        byte[] byteArray = byteArrayOutputStream.toByteArray();
-        return Base64.encodeToString(byteArray, Base64.DEFAULT);
-    }
-
-    private void uploadDocument(String base64Image) {
-        customerService.uploadDocument(customerId, base64Image, new CustomerService.ApiCallback() {
-            @Override
-            public void onSuccess(JSONObject response) {
-                runOnUiThread(() -> {
-                    try {
-                        Log.d("API_RESPONSE", response.toString());
-                        Toast.makeText(CameraActivity2.this, "Upload réussi", Toast.LENGTH_SHORT).show();
-
-                        // Lancer l'activité d'affichage
-                        Intent intent = new Intent(CameraActivity2.this, Display2Activity.class);
-                        intent.putExtra("customerId", customerId);
-                        startActivity(intent);
-
-                        finish();
-                    } catch (Exception e) {
-                        Toast.makeText(CameraActivity2.this, "Erreur affichage: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                });
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                runOnUiThread(() -> {
-                    Toast.makeText(CameraActivity2.this, "Échec upload: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    finish();
-                });
-            }
-        });
-    }*/
 }

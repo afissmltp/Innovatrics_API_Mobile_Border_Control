@@ -61,11 +61,7 @@ public class HomeActivity extends AppCompatActivity {
         clickableLayout.setOnClickListener(v -> onScanButtonClicked());
 
         showLoadingUI();
-
-        //initDynamsoftLicense();
-
         createCustomer();
-
     }
     private void onScanButtonClicked() {
         if (!isCustomerReady()) {
@@ -76,7 +72,6 @@ public class HomeActivity extends AppCompatActivity {
             requestCameraPermission();
             return;
         }
-
         // Si on arrive ici, la permission est accordée
         launchCameraActivity();
     }
@@ -216,14 +211,5 @@ public class HomeActivity extends AppCompatActivity {
         loadingLayout.setVisibility(LinearLayout.GONE);
         clickableLayout.setVisibility(LinearLayout.GONE);
     }
-   /* private void initDynamsoftLicense(){
-        LicenseManager.initLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMTA0Mzk0MjM0LU1UQTBNemswTWpNMExYZGxZaTFVY21saGJGQnliMm8iLCJtYWluU2VydmVyVVJMIjoiaHR0cHM6Ly9tZGxzLmR5bmFtc29mdG9ubGluZS5jb20iLCJvcmdhbml6YXRpb25JRCI6IjEwNDM5NDIzNCIsInN0YW5kYnlTZXJ2ZXJVUkwiOiJodHRwczovL3NkbHMuZHluYW1zb2Z0b25saW5lLmNvbSIsImNoZWNrQ29kZSI6LTE5NzU5MjY4MTJ9", this, (isSuccess, error) -> {
-            if (!isSuccess) {
-                Log.e("DDN", "Erreur d'initialisation de la licence: " + error);
-            }else{
-                Log.d("DDN","Licence Dynamsoft valide.");
-            }
-        });
-    }*/
 }
 

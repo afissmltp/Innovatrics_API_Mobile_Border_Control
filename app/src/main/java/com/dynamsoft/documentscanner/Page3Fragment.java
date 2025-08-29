@@ -49,6 +49,9 @@ public class Page3Fragment extends Fragment {
     private LinearLayout scoreContainerPortraitSelfie;
     private LinearLayout scoreContainerRfidSelfie;
     private Button btnCaptureSelfie; // Référence au bouton de capture/recapture
+    private CardView selfieCameraButtonContainer;
+    private CardView selfieCameraButtonContainer2;
+
 
     // Données
     private byte[] faceImageBytes;
@@ -100,7 +103,10 @@ public class Page3Fragment extends Fragment {
         rfidComparisonCard = view.findViewById(R.id.rfidComparisonCard);
         scoreContainerPortraitSelfie = view.findViewById(R.id.scoreContainerPortraitSelfie);
         scoreContainerRfidSelfie = view.findViewById(R.id.scoreContainerRfidSelfie);
-        btnCaptureSelfie = view.findViewById(R.id.btnCaptureSelfie); // Initialisation du bouton
+        //btnCaptureSelfie = view.findViewById(R.id.btnCaptureSelfie); // Initialisation du bouton
+
+        selfieCameraButtonContainer = view.findViewById(R.id.selfieCameraButtonContainer);
+        selfieCameraButtonContainer2 = view.findViewById(R.id.selfieCameraButtonContainer2);
 
         // Charger les images existantes
         if (rfidBitmap != null) {
@@ -163,13 +169,23 @@ public class Page3Fragment extends Fragment {
         });
 
         // C'est ici que vous définissez ce qui se passe lorsque l'utilisateur clique sur le bouton
-        btnCaptureSelfie.setOnClickListener(v -> {
+       /* btnCaptureSelfie.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), SelfieCameraActivity.class);
             intent.putExtra("customerId", customerId);
             // Utilisez startActivityForResult pour que ce fragment reçoive le résultat
             startActivityForResult(intent, SELFIE_CAPTURE_REQUEST_CODE);
+        });*/
+        // Remplacer l'ancien bouton par le nouveau conteneur
+        selfieCameraButtonContainer.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), SelfieCameraActivity.class);
+            intent.putExtra("customerId", customerId);
+            startActivityForResult(intent, SELFIE_CAPTURE_REQUEST_CODE);
         });
-
+        selfieCameraButtonContainer2.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), SelfieCameraActivity.class);
+            intent.putExtra("customerId", customerId);
+            startActivityForResult(intent, SELFIE_CAPTURE_REQUEST_CODE);
+        });
         return view;
     }
 
@@ -285,9 +301,9 @@ public class Page3Fragment extends Fragment {
                 }
                 @Override
                 public void onFailure(Exception e) {
-                    requireActivity().runOnUiThread(() ->
-                            Toast.makeText(requireContext(), "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                    );
+                    /*requireActivity().runOnUiThread(() ->
+                           Toast.makeText(requireContext(), "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                    );*/
                     Log.e(TAG, "Upload failed", e);
                 }
             });
@@ -350,20 +366,22 @@ public class Page3Fragment extends Fragment {
         }
     }
 
-    // Méthode centralisée pour gérer la mise à jour de l'UI du selfie et du bouton
     private void updateSelfieUI() {
         if (CustomerDataActivity.selfieBitmap != null) {
             selfieImageView.setImageBitmap(CustomerDataActivity.selfieBitmap);
             selfieImageView2.setImageBitmap(CustomerDataActivity.selfieBitmap);
-            if (btnCaptureSelfie != null) {
-                btnCaptureSelfie.setText("Recapturer le selfie");
-            }
+            selfieImageView2.setVisibility(View.VISIBLE);
+            selfieImageView.setVisibility(View.VISIBLE);
+            selfieCameraButtonContainer.setVisibility(View.GONE); // Cache le bouton caméra
+            selfieCameraButtonContainer2.setVisibility(View.GONE); // Cache le bouton caméra
+
         } else {
             selfieImageView.setImageDrawable(null);
             selfieImageView2.setImageDrawable(null);
-            if (btnCaptureSelfie != null) {
-                btnCaptureSelfie.setText("Capturer un selfie");
-            }
+            selfieImageView2.setVisibility(View.GONE);
+            selfieCameraButtonContainer.setVisibility(View.VISIBLE); // Affiche le bouton caméra
+            selfieCameraButtonContainer2.setVisibility(View.VISIBLE); // Affiche le bouton caméra
+
         }
     }
 

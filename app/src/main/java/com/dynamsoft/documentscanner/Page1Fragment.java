@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
+import com.dynamsoft.documentscanner.model.Page1FragmentData;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -191,5 +192,22 @@ public class Page1Fragment extends Fragment {
         if (getView() != null) {
             displayCustomerData(customerData);
         }
+    }
+
+    public Page1FragmentData getData() {
+        Page1FragmentData data = new Page1FragmentData();
+        data.dob = tvDob.getText().toString();
+        data.nationality = tvNationality.getText().toString();
+        data.documentType = tvDocumentType.getText().toString();
+        data.documentNumber = tvDocumentNumber.getText().toString();
+        data.dateOfExpiry = tvDateOfExpiry.getText().toString();
+        data.issuingAuthority = tvIssuingAuthority.getText().toString();
+
+        // Récupérer l'image du document
+        if (documentImageView.getDrawable() instanceof BitmapDrawable) {
+            data.documentImage = ((BitmapDrawable) documentImageView.getDrawable()).getBitmap();
+        }
+
+        return data;
     }
 }

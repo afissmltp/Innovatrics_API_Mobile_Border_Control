@@ -29,16 +29,6 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <!-- Updated button ID here -->
-                    <Button
-                        android:id="@+id/btnCaptureSelfie"
-                        android:layout_width="184dp"
-                        android:layout_height="wrap_content"
-                        android:text="Capturer un selfie"
-                        android:layout_gravity="center"
-                        android:backgroundTint="@color/purple_app_bar"
-                        android:textColor="@color/white"/>
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -88,11 +78,41 @@
                                 android:text="Selfie client"
                                 android:layout_marginBottom="8dp" />
 
-                            <ImageView
-                                android:id="@+id/imageView2"
+                            <!-- Conteneur pour l'image selfie et le bouton caméra -->
+                            <FrameLayout
                                 android:layout_width="140dp"
-                                android:layout_height="180dp"
-                                android:scaleType="centerCrop"/>
+                                android:layout_height="180dp">
+
+                                <ImageView
+                                    android:id="@+id/imageView2"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:scaleType="centerCrop"
+                                    android:visibility="gone"/>
+
+                                <androidx.cardview.widget.CardView
+                                    android:id="@+id/selfieCameraButtonContainer"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:layout_gravity="center"
+                                    android:clickable="true"
+                                    android:focusable="true">
+
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:orientation="vertical"
+                                        android:gravity="center"
+                                        android:background="?selectableItemBackground">
+
+                                        <ImageView
+                                            android:layout_width="48dp"
+                                            android:layout_height="48dp"
+                                            android:src="@drawable/ic_camera"
+                                            android:tint="@color/purple_app_bar"/>
+                                    </LinearLayout>
+                                </androidx.cardview.widget.CardView>
+                            </FrameLayout>
                         </LinearLayout>
                     </LinearLayout>
 
@@ -182,11 +202,41 @@
                                 android:text="Selfie client"
                                 android:layout_marginBottom="8dp" />
 
-                            <ImageView
-                                android:id="@+id/selfieIMG"
+                            <!-- Conteneur pour l'image selfie et le bouton caméra (2ème emplacement) -->
+                            <FrameLayout
                                 android:layout_width="140dp"
-                                android:layout_height="180dp"
-                                android:scaleType="centerCrop"/>
+                                android:layout_height="180dp">
+
+                                <ImageView
+                                    android:id="@+id/selfieIMG"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:scaleType="centerCrop"
+                                    android:visibility="gone"/>
+
+                                <androidx.cardview.widget.CardView
+                                    android:id="@+id/selfieCameraButtonContainer2"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:layout_gravity="center"
+                                    android:clickable="true"
+                                    android:focusable="true">
+
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:orientation="vertical"
+                                        android:gravity="center"
+                                        android:background="?selectableItemBackground">
+
+                                        <ImageView
+                                            android:layout_width="48dp"
+                                            android:layout_height="48dp"
+                                            android:src="@drawable/ic_camera"
+                                            android:tint="@color/purple_app_bar"/>
+                                    </LinearLayout>
+                                </androidx.cardview.widget.CardView>
+                            </FrameLayout>
                         </LinearLayout>
                     </LinearLayout>
 
