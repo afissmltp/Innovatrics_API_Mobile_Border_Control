@@ -1,18 +1,25 @@
 package com.dynamsoft.documentscanner;
 
 import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.pdf.PdfDocument;
 import android.media.ExifInterface;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -20,17 +27,20 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
-import com.dynamsoft.documentscanner.model.Page1FragmentData;
-import com.dynamsoft.documentscanner.model.PdfGenerator;
+import com.dynamsoft.documentscanner.model.SessionData;
 import com.dynamsoft.documentscanner.ui.ReadNFCActivity;
 import com.google.android.material.tabs.TabLayout;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -41,8 +51,6 @@ import java.util.concurrent.Executors;
 
 public class CustomerDataActivity extends AppCompatActivity {
     private static final String TAG = "CustomerDataActivity";
-    private static final int PDF_SHARE_REQUEST_CODE = 3001; // Code de requête unique pour le partage PDF
-
     private TextView tvName, tvGender, tvSurname, tvAge;
     private CustomerService customerService;
     private ImageView imageView;
@@ -53,7 +61,7 @@ public class CustomerDataActivity extends AppCompatActivity {
     public static Bitmap selfieBitmap = null;
     public static Double similarityScore = null;
     public static Integer rfidSimilarityScore = null;
-
+    public static Bitmap rfidBitmap;
     private final String[] PAGE_TITLES = new String[]{
             "INFO",
             "Images",
@@ -62,6 +70,7 @@ public class CustomerDataActivity extends AppCompatActivity {
     };
     private Fragment[] PAGES;
     private ViewPager mViewPager;
+    private String expirationStatusText, mrzStatusText, printCopyStatusText, textConsistencyStatusText, ocrConfidenceStatusText, screenshotStatusText, genderComparisonStatus, ageComparisonStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,9 +78,28 @@ public class CustomerDataActivity extends AppCompatActivity {
         setContentView(R.layout.activity_customerdata);
 
         customerService = new CustomerService();
+
         initializeViews();
 
         customerId = getIntent().getStringExtra("customerId");
+       /* expirationStatusText = getIntent().getStringExtra("expirationStatus");
+        mrzStatusText = getIntent().getStringExtra("mrzStatus");
+        printCopyStatusText = getIntent().getStringExtra("printCopyStatus");
+        textConsistencyStatusText = getIntent().getStringExtra("textConsistencyStatus");
+        ocrConfidenceStatusText = getIntent().getStringExtra("ocrConfidenceStatus");
+        screenshotStatusText = getIntent().getStringExtra("screenshotStatus");
+        ageComparisonStatus = getIntent().getStringExtra("ageComparison");
+        genderComparisonStatus = getIntent().getStringExtra("genderComparison");*/
+
+        SessionData data = SessionData.getInstance();
+        expirationStatusText = data.expirationStatus;
+        mrzStatusText = data.mrzStatus;
+        printCopyStatusText = data.printCopyStatus;
+        textConsistencyStatusText = data.textConsistencyStatus;
+        ocrConfidenceStatusText = data.ocrConfidenceStatus;
+        screenshotStatusText = data.screenshotStatus;
+        ageComparisonStatus = data.ageComparison;
+        genderComparisonStatus = data.genderComparison;
 
         if (customerId != null && !customerId.isEmpty()) {
             if (savedInstanceState == null) {
@@ -99,9 +127,6 @@ public class CustomerDataActivity extends AppCompatActivity {
 
         ImageButton docScanButton = findViewById(R.id.docScanButton);
         docScanButton.setOnClickListener(v -> onScanButtonClicked());
-
-        ImageButton btnGeneratePdf = findViewById(R.id.btnGeneratePdf);
-        //btnGeneratePdf.setOnClickListener(v -> generatePdfFromFragments());
 
         // Initialisation des fragments
         byte[] faceImageBytes = getIntent().getByteArrayExtra("faceImage");
@@ -175,8 +200,92 @@ public class CustomerDataActivity extends AppCompatActivity {
             Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
             showImageFullscreen(bitmap);
         });
-    }
 
+        ImageButton btnGeneratePdf = findViewById(R.id.btnGeneratePdf);
+        btnGeneratePdf.setOnClickListener(v -> {
+            Log.d("PDF_FLOW", "Bouton PDF cliqué");
+
+            if (areAllDataReady()) {
+                Log.d("PDF_FLOW", "Toutes les données sont prêtes");
+
+                // Afficher un indicateur de chargement
+                ProgressDialog progressDialog = new ProgressDialog(this);
+                progressDialog.setMessage("Génération du PDF en cours...");
+                progressDialog.setCancelable(false);
+                progressDialog.show();
+                Log.d("PDF_FLOW", "ProgressDialog affiché");
+
+                new Thread(() -> {
+                    Log.d("PDF_FLOW", "Début génération PDF en background thread");
+                    File pdfFile = generateAndExportPdf(customerData);
+
+                    runOnUiThread(() -> {
+                        Log.d("PDF_FLOW", "Retour sur UI thread, fermeture ProgressDialog");
+                        progressDialog.dismiss();
+
+                        if (pdfFile != null && pdfFile.exists()) {
+                            Log.d("PDF_FLOW", "PDF généré avec succès: " + pdfFile.getAbsolutePath());
+                            Log.d("PDF_FLOW", "Taille du fichier: " + pdfFile.length() + " bytes");
+                            Toast.makeText(this, "PDF généré avec succès", Toast.LENGTH_SHORT).show();
+
+                            Log.d("PDF_FLOW", "Tentative d'ouverture de WhatsApp");
+                            openWhatsAppWithPdf(pdfFile);
+                        } else {
+                            Log.e("PDF_FLOW", "Échec de la génération du PDF - fichier null ou inexistant");
+                            Toast.makeText(this, "Échec de la génération du PDF", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }).start();
+
+            } else {
+                Log.w("PDF_FLOW", "Données client pas toutes prêtes");
+                Toast.makeText(this, "Les données client ne sont pas encore toutes prêtes.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    private void openWhatsAppWithPdf(File pdfFile) {
+        try {
+            Log.d("WHATSAPP_FLOW", "Début d'ouverture de WhatsApp");
+            Log.d("WHATSAPP_FLOW", "Fichier à partager: " + pdfFile.getAbsolutePath());
+
+            if (pdfFile == null || !pdfFile.exists()) {
+                Log.e("WHATSAPP_FLOW", "Fichier PDF non trouvé ou null");
+                Toast.makeText(this, "Fichier PDF non trouvé", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Uri pdfUri = FileProvider.getUriForFile(
+                    this,
+                    getPackageName() + ".fileprovider",
+                    pdfFile
+            );
+            Log.d("WHATSAPP_FLOW", "URI générée: " + pdfUri.toString());
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("application/pdf");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, pdfUri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            startActivity(Intent.createChooser(shareIntent, "Partager le PDF via"));
+
+            Log.d("WHATSAPP_FLOW", "Intent créé, vérification de WhatsApp...");
+
+            // Vérifier si WhatsApp est installé
+            if (shareIntent.resolveActivity(getPackageManager()) != null) {
+                Log.d("WHATSAPP_FLOW", "WhatsApp trouvé, lancement de l'activité");
+                Log.d("WHATSAPP_FLOW", "L'application va quitter pour ouvrir WhatsApp");
+                startActivity(shareIntent);
+                Log.d("WHATSAPP_FLOW", "Activity lancée - WhatsApp devrait s'ouvrir");
+            } else {
+                Log.w("WHATSAPP_FLOW", "WhatsApp n'est pas installé");
+                Toast.makeText(this, "WhatsApp n'est pas installé", Toast.LENGTH_SHORT).show();
+            }
+
+        } catch (Exception e) {
+            Log.e("WHATSAPP_FLOW", "Erreur lors de l'ouverture de WhatsApp", e);
+            Toast.makeText(this, "Erreur lors du partage: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
     private void onScanButtonClicked() {
         // Clear the cache BEFORE launching the new scan activity.
         // This ensures Page1Fragment will perform a new API call for the updated image.
@@ -376,6 +485,7 @@ public class CustomerDataActivity extends AppCompatActivity {
                         }
                     });
                 }
+
                 @Override
                 public void onFailure(Exception e) {
                     Log.e(TAG, "Erreur API portrait : " + e.getMessage());
@@ -391,11 +501,13 @@ public class CustomerDataActivity extends AppCompatActivity {
     public class MyPagerAdapter extends FragmentStatePagerAdapter {
         private final Fragment[] fragments;
         private final String[] titles;
+
         public MyPagerAdapter(FragmentManager fm, Fragment[] fragments, String[] titles) {
             super(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
             this.fragments = fragments;
             this.titles = titles;
         }
+
         @Override
         public Fragment getItem(int position) {
             if (position == 0 && customerData != null) {
@@ -408,20 +520,16 @@ public class CustomerDataActivity extends AppCompatActivity {
             return fragments[position];
         }
 
-        // Add a public method to retrieve the fragment instance by position.
-      /*  public Fragment getFragment(int position) {
-            return fragments[position];
-        }*/
-
-
         @Override
         public int getCount() {
             return fragments.length;
         }
+
         @Override
         public CharSequence getPageTitle(int position) {
             return titles[position];
         }
+
         @Override
         public int getItemPosition(Object object) {
             return POSITION_NONE;
@@ -452,24 +560,354 @@ public class CustomerDataActivity extends AppCompatActivity {
             selfieBitmap.recycle();
             selfieBitmap = null;
         }
+
         similarityScore = null;
         rfidSimilarityScore = null;
+
+        SessionData.clear(); // Les données sont supprimées quand l'activité est détruite
+
         super.onDestroy();
     }
 
-   /* public void generatePdfFromFragments() {
-        // Correctly get the fragment from the adapter
-        MyPagerAdapter adapter = (MyPagerAdapter) mViewPager.getAdapter();
-        Page1Fragment page1Fragment = (Page1Fragment) adapter.getFragment(0);
+    private File generateAndExportPdf(JSONObject apiResponse) {
+        File file = null;
 
-        if (page1Fragment != null) {
-            Page1FragmentData page1Data = page1Fragment.getData();
+        try {
+            JSONObject customer = apiResponse.getJSONObject("customer");
+            JSONObject document = customer.getJSONObject("document");
 
-            // Créer une instance de PdfGenerator en passant le contexte
-            PdfGenerator pdfGenerator = new PdfGenerator(this); // <-- L'instance a besoin du contexte
+            // Extraction des données du JSON pour la première page
+            String name = customer.optJSONObject("givenNames").optString("mrz", "N/A");
+            String surname = customer.optJSONObject("surname").optString("mrz", "N/A");
+            String gender = customer.optJSONObject("gender").optString("mrz", "N/A").equals("M") ? "Homme" : "Femme";
+            String dateOfBirth = customer.optJSONObject("dateOfBirth").optString("mrz", "N/A");
+            String nationality = customer.optJSONObject("nationality").optString("mrz", "N/A");
+            String documentNumber = document.optJSONObject("documentNumber").optString("mrz", "N/A");
+            String dateOfExpiry = document.optJSONObject("dateOfExpiry").optString("mrz", "N/A");
+            String issuingAuthority = document.optJSONObject("issuingAuthority").optString("mrz", "N/A");
+            String docType = document.optJSONObject("type").optString("machineReadableTravelDocument", "N/A");
 
-            // Appeler createPdf en passant les données. Le contexte est déjà dans le générateur
-            pdfGenerator.createPdf(page1Data);
+            if ("td3".equalsIgnoreCase(docType)) {
+                docType = "Passeport";
+            } else if ("td1".equalsIgnoreCase(docType)) {
+                docType = "Carte d'identité";
+            } else if ("td2".equalsIgnoreCase(docType)) {
+                docType = "Document TD2";
+            }
+
+            PdfDocument pdfDocument = new PdfDocument();
+
+            // Couleurs modernes
+            int primaryColor = Color.rgb(59, 89, 152);
+            int secondaryColor = Color.rgb(120, 140, 180);
+            int textColor = Color.rgb(50, 50, 50);
+            int lightGray = Color.rgb(240, 240, 240);
+            int successColor = Color.rgb(46, 125, 50);
+            int warningColor = Color.rgb(237, 108, 0);
+            int errorColor = Color.rgb(198, 40, 40);
+
+            // Création des styles
+            Paint headerPaint = new Paint();
+            headerPaint.setTextSize(28);
+            headerPaint.setFakeBoldText(true);
+            headerPaint.setColor(primaryColor);
+
+            Paint sectionPaint = new Paint();
+            sectionPaint.setTextSize(20);
+            sectionPaint.setFakeBoldText(true);
+            sectionPaint.setColor(secondaryColor);
+
+            Paint textPaint = new Paint();
+            textPaint.setTextSize(16);
+            textPaint.setColor(textColor);
+
+            Paint labelPaint = new Paint();
+            labelPaint.setTextSize(16);
+            labelPaint.setFakeBoldText(true);
+            labelPaint.setColor(textColor);
+
+            Paint backgroundPaint = new Paint();
+            backgroundPaint.setColor(lightGray);
+            backgroundPaint.setStyle(Paint.Style.FILL);
+
+            Paint scorePaint = new Paint();
+            scorePaint.setTextSize(18);
+            scorePaint.setFakeBoldText(true);
+
+            Paint linePaint = new Paint();
+            linePaint.setColor(Color.LTGRAY);
+            linePaint.setStrokeWidth(1);
+
+            int contentWidth = 515;
+            int pageMargin = 40;
+            int currentPage = 1;
+
+            // --- PAGE 1 : Infos de base ---
+            PdfDocument.PageInfo pageInfo1 = new PdfDocument.PageInfo.Builder(595, 842, currentPage).create();
+            PdfDocument.Page page1 = pdfDocument.startPage(pageInfo1);
+            Canvas canvas = page1.getCanvas();
+            int x = pageMargin;
+            int y = 60;
+
+            canvas.drawText("Résultat d'inspection", x, y, headerPaint);
+            y += 40;
+
+            if (portraitBitmap != null) {
+                canvas.drawText("Portrait du document", x, y, sectionPaint);
+                y += 20;
+                Bitmap scaledPortrait = Bitmap.createScaledBitmap(portraitBitmap, 155, 155, true);
+                canvas.drawBitmap(scaledPortrait, x, y, null);
+                y += 160;
+            }
+
+            canvas.drawRect(x, y, x + contentWidth, y + 30, backgroundPaint);
+            canvas.drawText("Informations Personnelles", x + 10, y + 22, sectionPaint);
+            y += 40;
+            canvas.drawText("Nom complet: ", x, y, labelPaint);
+            canvas.drawText(name + " " + surname, x + 150, y, textPaint); y += 25;
+            canvas.drawText("Sexe: ", x, y, labelPaint);
+            canvas.drawText(gender, x + 150, y, textPaint); y += 25;
+            canvas.drawText("Date de naissance: ", x, y, labelPaint);
+            canvas.drawText(dateOfBirth, x + 150, y, textPaint); y += 25;
+            canvas.drawText("Nationalité: ", x, y, labelPaint);
+            canvas.drawText(nationality, x + 150, y, textPaint); y += 40;
+
+            canvas.drawRect(x, y, x + contentWidth, y + 30, backgroundPaint);
+            canvas.drawText("Informations du Document", x + 10, y + 22, sectionPaint);
+            y += 40;
+            canvas.drawText("Type de document: " + docType, x, y, textPaint); y += 25;
+            canvas.drawText("Numéro: " + documentNumber, x, y, textPaint); y += 25;
+            canvas.drawText("Expiration: " + dateOfExpiry, x, y, textPaint); y += 25;
+            canvas.drawText("Autorité: " + issuingAuthority, x, y, textPaint); y += 40;
+
+            if (rectoBitmap != null) {
+                canvas.drawText("Document", x, y, sectionPaint);
+                y += 20;
+                float aspectRatio = (float) rectoBitmap.getWidth() / rectoBitmap.getHeight();
+                int docWidth = 300;
+                int docHeight = (int) (docWidth / aspectRatio);
+                if (docHeight > 200) {
+                    docHeight = 200;
+                    docWidth = (int) (docHeight * aspectRatio);
+                }
+                Bitmap scaledRecto = Bitmap.createScaledBitmap(rectoBitmap, docWidth, docHeight, true);
+                canvas.drawBitmap(scaledRecto, x, y, null);
+            }
+
+            pdfDocument.finishPage(page1);
+
+            // --- PAGE 2 : Cohérence + inspection ---
+            currentPage++;
+            PdfDocument.PageInfo pageInfo2 = new PdfDocument.PageInfo.Builder(595, 842, currentPage).create();
+            PdfDocument.Page page2 = pdfDocument.startPage(pageInfo2);
+            canvas = page2.getCanvas();
+            x = pageMargin; y = 60;
+
+            // Section : Vérification de cohérence (MRZ - Portrait)
+
+            canvas.drawRect(x, y, x + contentWidth, y + 30, backgroundPaint);
+            canvas.drawText("Vérification de cohérence (MRZ - Portrait)", x + 10, y + 22, sectionPaint);
+            y += 40;
+
+            canvas.drawText("Comparaison âge : " + (ageComparisonStatus != null ? ageComparisonStatus : "N/A"), x, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Comparaison genre : " + (genderComparisonStatus != null ? genderComparisonStatus : "N/A"), x, y, textPaint);
+            y += 40;
+
+// Section : Statuts d’inspection du document
+
+            canvas.drawRect(x, y, x + contentWidth, y + 30, backgroundPaint);
+            canvas.drawText("Statuts d'inspection du documen", x + 10, y + 22, sectionPaint);
+            y += 40;
+
+            canvas.drawText("Expiration : " + (expirationStatusText != null ? expirationStatusText : "N/A"), x, y, textPaint);
+            y += 25;
+
+            canvas.drawText("MRZ : " + (mrzStatusText != null ? mrzStatusText : "N/A"), x, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Copie imprimée : " + (printCopyStatusText != null ? printCopyStatusText : "N/A"), x, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Cohérence du texte : " + (textConsistencyStatusText != null ? textConsistencyStatusText : "N/A"), x, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Confiance OCR : " + (ocrConfidenceStatusText != null ? ocrConfidenceStatusText : "N/A"), x, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Capture d'écran : " + (screenshotStatusText != null ? screenshotStatusText : "N/A"), x, y, textPaint);
+            y += 25;
+
+            pdfDocument.finishPage(page2);
+
+            // --- PAGE 3 : Comparaison Portrait/Selfie et RFID/Selfie ---
+            currentPage++;
+            PdfDocument.PageInfo pageInfo3 = new PdfDocument.PageInfo.Builder(595, 842, currentPage).create();
+            PdfDocument.Page page3 = pdfDocument.startPage(pageInfo3);
+            canvas = page3.getCanvas();
+            x = pageMargin; y = 60;
+
+            Page3Fragment page3Fragment = (Page3Fragment) mViewPager.getAdapter().instantiateItem(mViewPager, 2);
+            String portraitSelfieScore = "N/A";
+            String rfidSelfieScore = "N/A";
+            if (page3Fragment != null) {
+                JSONObject page3Data = page3Fragment.getPdfData();
+                portraitSelfieScore = page3Data.optString("portraitSelfieScore", "N/A");
+                rfidSelfieScore = page3Data.optString("rfidSelfieScore", "N/A");
+            }
+
+            canvas.drawText("Comparaison Portrait Document vs Selfie", x, y, headerPaint); y += 40;
+            canvas.drawText("Score: " + portraitSelfieScore, x, y, scorePaint); y += 30;
+
+            if (CustomerDataActivity.portraitBitmap != null) {
+                Bitmap scaledPortrait = Bitmap.createScaledBitmap(CustomerDataActivity.portraitBitmap,150,200,true);
+                canvas.drawBitmap(scaledPortrait, x, y, null);
+                canvas.drawText("Portrait", x, y+220, textPaint);
+            }
+            if (CustomerDataActivity.selfieBitmap != null) {
+                Bitmap scaledSelfie = Bitmap.createScaledBitmap(CustomerDataActivity.selfieBitmap,150,200,true);
+                canvas.drawBitmap(scaledSelfie, x+200, y, null);
+                canvas.drawText("Selfie", x+200, y+220, textPaint);
+            }
+            y += 260;
+
+            canvas.drawLine(x, y, x+contentWidth, y, linePaint); y += 20;
+
+            canvas.drawText("Comparaison Photo RFID vs Selfie", x, y, headerPaint); y += 40;
+            canvas.drawText("Score: " + rfidSelfieScore, x, y, scorePaint); y += 30;
+
+            if (CustomerDataActivity.rfidBitmap != null) {
+                Bitmap scaledRfid = Bitmap.createScaledBitmap(CustomerDataActivity.rfidBitmap,150,200,true);
+                canvas.drawBitmap(scaledRfid, x, y, null);
+                canvas.drawText("Photo RFID", x, y+220, textPaint);
+            }
+            if (CustomerDataActivity.selfieBitmap != null) {
+                Bitmap scaledSelfie = Bitmap.createScaledBitmap(CustomerDataActivity.selfieBitmap,150,200,true);
+                canvas.drawBitmap(scaledSelfie, x+200, y, null);
+                canvas.drawText("Selfie", x+200, y+220, textPaint);
+            }
+
+            pdfDocument.finishPage(page3);
+
+            // --- PAGE 4 : Comparaison RFID vs Portrait Document ---
+            currentPage++;
+            PdfDocument.PageInfo pageInfo4 = new PdfDocument.PageInfo.Builder(595, 842, currentPage).create();
+            PdfDocument.Page page4 = pdfDocument.startPage(pageInfo4);
+            canvas = page4.getCanvas();
+            x = pageMargin;
+            y = 60;
+
+            Page4Fragment page4Fragment = (Page4Fragment) mViewPager.getAdapter().instantiateItem(mViewPager, 3);
+            String facialSimilarityScore = "N/A";
+            JSONObject rfidData = null;
+            JSONObject mrzData = null;
+
+            if (page4Fragment != null) {
+                JSONObject page4Data = page4Fragment.getPdfData();
+                rfidData = page4Data.optJSONObject("rfidData");
+                mrzData = page4Data.optJSONObject("mrzData");
+                facialSimilarityScore = page4Data.optString("facialSimilarityScore", "N/A");
+            }
+
+// Titre
+            canvas.drawText("Comparaison Photo RFID vs Portrait Document", x, y, headerPaint);
+            y += 40;
+
+// Affichage des images
+            int imgWidth = 200;
+            int imgHeight = 250;
+            if (CustomerDataActivity.rfidBitmap != null) {
+                Bitmap scaledRfid = Bitmap.createScaledBitmap(CustomerDataActivity.rfidBitmap, imgWidth, imgHeight, true);
+                canvas.drawBitmap(scaledRfid, x, y, null);
+                canvas.drawText("Photo RFID", x, y + imgHeight + 20, textPaint);
+            }
+
+            if (CustomerDataActivity.portraitBitmap != null) {
+                Bitmap scaledPortrait = Bitmap.createScaledBitmap(CustomerDataActivity.portraitBitmap, imgWidth, imgHeight, true);
+                canvas.drawBitmap(scaledPortrait, x + 250, y, null);
+                canvas.drawText("Portrait Document", x + 250, y + imgHeight + 20, textPaint);
+            }
+
+            y += imgHeight + 60; // Décalage après les images
+
+// Score de similarité
+            canvas.drawText("Score de similarité faciale : " + facialSimilarityScore, x, y, scorePaint);
+            y += 40;
+
+// --- Tableau comparatif RFID vs MRZ ---
+            if (rfidData != null && mrzData != null) {
+                int col1X = x;
+                int col2X = x + 200;
+                int col3X = x + 400;
+                int tableY = y;
+
+                canvas.drawRect(col1X, tableY, col3X + 100, tableY + 30, backgroundPaint);
+                canvas.drawText("Champ", col1X + 10, tableY + 20, labelPaint);
+                canvas.drawText("RFID", col2X + 10, tableY + 20, labelPaint);
+                canvas.drawText("MRZ", col3X + 10, tableY + 20, labelPaint);
+                tableY += 35;
+
+                String[] fields = {"Nom","Prénom","Sexe","Nationalité","Naissance","Numéro","Expiration","Autorité","Type"};
+                String[] keys = {"surname","givenName","gender","nationality","dateOfBirth","documentNumber","dateOfExpiry","issuerAuthority","docType"};
+
+                for (int i = 0; i < fields.length; i++) {
+                    String rfidVal = rfidData.optString(keys[i], "N/A");
+                    String mrzVal = mrzData.optString(keys[i], "N/A");
+                    drawTableRow(canvas, textPaint, col1X + 10, col2X + 10, col3X + 10, fields[i], rfidVal, mrzVal, tableY + 18);
+                    tableY += 25;
+                }
+            }
+
+            pdfDocument.finishPage(page4);
+
+            // --- Sauvegarde ---
+            file = new File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    "fiche_client_" + surname + "_" + System.currentTimeMillis() + ".pdf"
+            );
+            try {
+                pdfDocument.writeTo(new FileOutputStream(file));
+
+            } catch (IOException e) {
+                Log.e("PDF_GENERATION","Error writing PDF",e);
+            }
+            pdfDocument.close();
+
+        } catch (JSONException e) {
+            Log.e("JSON_PARSING","Error parsing JSON",e);
         }
-    }*/
+        return file;
+    }
+
+    private void drawTableRow(Canvas canvas, Paint paint, int col1X, int col2X, int col3X,
+                              String label, String dataRfid, String dataMrz, int y) {
+        canvas.drawText(label, col1X, y, paint);
+        Paint dataPaint = new Paint(paint);
+        if (dataRfid.equals(dataMrz)) {
+            dataPaint.setColor(Color.rgb(46, 125, 50));
+        } else if (!"N/A".equals(dataRfid) && !"N/A".equals(dataMrz)) {
+            dataPaint.setColor(Color.rgb(198, 40, 40));
+        }
+        canvas.drawText(dataRfid, col2X, y, dataPaint);
+        canvas.drawText(dataMrz, col3X, y, dataPaint);
+    }
+    private boolean areAllDataReady() {
+        return portraitBitmap != null &&
+                rectoBitmap != null &&
+                CustomerDataActivity.selfieBitmap != null &&
+                CustomerDataActivity.rfidBitmap != null &&
+                CustomerDataActivity.portraitBitmap != null &&
+
+                expirationStatusText != null &&
+                mrzStatusText != null &&
+                printCopyStatusText != null &&
+                textConsistencyStatusText != null &&
+                ocrConfidenceStatusText != null &&
+                screenshotStatusText != null &&
+                ageComparisonStatus != null &&
+                genderComparisonStatus != null;
+    }
 }
+// You also need to add the getPdfData() method to your Page3Fragment.
+// I recommend adding the method as shown in the previous response.}

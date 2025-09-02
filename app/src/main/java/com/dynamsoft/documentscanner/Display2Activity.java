@@ -15,22 +15,18 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
-
-import com.bumptech.glide.Glide;
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
+import com.dynamsoft.documentscanner.model.SessionData;
 import com.dynamsoft.documentscanner.ui.ReadNFCActivity;
 import com.jsibbold.zoomage.ZoomageView;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.Locale;
 
 public class Display2Activity extends AppCompatActivity {
-
     private ZoomageView documentImageView;
     private ProgressBar progressBar;
     private Button readDocBtn, rotateButton;
@@ -43,10 +39,16 @@ public class Display2Activity extends AppCompatActivity {
     private int rotation = 0;
     private Bitmap displayedBitmap;
     private boolean isDocumentInspected = false;
-
-
     private ImageView ageIcon, genderIcon;
     private TextView ageStatus, genderStatus;
+    private String ageComparisonStatus = "Non vérifié";
+    private String genderComparisonStatus = "Non vérifié";
+    private String expirationStatusText = "Non inspecté";
+    private String mrzStatusText = "Non inspecté";
+    private String printCopyStatusText = "Non inspecté";
+    private String textConsistencyStatusText = "Non inspecté";
+    private String ocrConfidenceStatusText = "Non inspecté";
+    private String screenshotStatusText = "Non inspecté";
 
 
     @Override
@@ -66,7 +68,6 @@ public class Display2Activity extends AppCompatActivity {
 
         initializeViews();
         setupCustomerId();
-        setupButtonListeners();
         loadDocumentImage();
 
 
@@ -76,9 +77,14 @@ public class Display2Activity extends AppCompatActivity {
             if (selfieBtn != null) {
                 selfieBtn.setVisibility(View.GONE); // Cacher le bouton
             }
+            ImageButton btnGeneratePdf = bottomControlBar.findViewById(R.id.btnGeneratePdf);
+            if (btnGeneratePdf != null) {
+                btnGeneratePdf.setVisibility(View.GONE); // Cacher le bouton
+            }
         }
 
         fetchCustomerData();
+        setupButtonListeners();
     }
 
     private void initializeViews() {
@@ -161,11 +167,13 @@ public class Display2Activity extends AppCompatActivity {
         if (ageMRZ == agePortrait) {
             ageIcon.setImageResource(R.drawable.ic_check_circle);
             ageIcon.setColorFilter(getResources().getColor(R.color.green));
-            ageStatus.setText("Âge : ✔ (" + ageMRZ + " vs " + agePortrait + ")");
+            ageComparisonStatus = "Âge : ✔ (" + ageMRZ + " vs " + agePortrait + ")";
+            ageStatus.setText(ageComparisonStatus);
         } else {
             ageIcon.setImageResource(R.drawable.ic_error_circle);
             ageIcon.setColorFilter(getResources().getColor(R.color.red));
-            ageStatus.setText("Âge : ❌ (" + ageMRZ + " vs " + agePortrait + ")");
+            ageComparisonStatus = "Âge : ❌ (" + ageMRZ + " vs " + agePortrait + ")";
+            ageStatus.setText(ageComparisonStatus);
         }
 
         String genderMRZ = customer.getJSONObject("gender").getString("mrz");
@@ -173,19 +181,23 @@ public class Display2Activity extends AppCompatActivity {
         if (genderMRZ.equalsIgnoreCase(genderPortrait)) {
             genderIcon.setImageResource(R.drawable.ic_check_circle);
             genderIcon.setColorFilter(getResources().getColor(R.color.green));
-            genderStatus.setText("Genre : ✔ (" + genderMRZ + ")");
+            genderComparisonStatus = "Genre : ✔ (" + genderMRZ + ")";
+            genderStatus.setText(genderComparisonStatus);
         } else {
             genderIcon.setImageResource(R.drawable.ic_error_circle);
             genderIcon.setColorFilter(getResources().getColor(R.color.red));
-            genderStatus.setText("Genre : ❌ (MRZ: " + genderMRZ + " vs Portrait: " + genderPortrait + ")");
+            genderComparisonStatus = "Genre : ❌ (MRZ: " + genderMRZ + " vs Portrait: " + genderPortrait + ")";
+            genderStatus.setText(genderComparisonStatus);
         }
         readDocBtn.setEnabled(true);
         rotateButton.setEnabled(true);
     }
 
     private void inspectDocument() {
-        if (isDocumentInspected) return;
-
+        /*if (isDocumentInspected) {
+            navigateToCustomerData();
+            return;
+        }*/
         showProgress();
         customerService.inspectDocument(customerId, new CustomerService.ApiCallback() {
             @Override
@@ -193,9 +205,9 @@ public class Display2Activity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     try {
                         isDocumentInspected = true;
-
                         // 1. Statut d'expiration
                         boolean expired = response.optBoolean("expired", true);
+                        expirationStatusText = expired ? "EXPIRÉ" : "VALIDE";
                         updateStatus(expirationStatus, expirationIcon,
                                 "Expiration : " + (expired ? "EXPIRÉ" : "VALIDE"), !expired);
 
@@ -203,6 +215,7 @@ public class Display2Activity extends AppCompatActivity {
                         JSONObject mrzInspection = response.optJSONObject("mrzInspection");
                         if (mrzInspection != null) {
                             boolean mrzValid = mrzInspection.optBoolean("valid", false);
+                            mrzStatusText = mrzValid ? "VALIDE" : "INVALIDE";
                             updateStatus(mrzStatus, mrzIcon,
                                     "MRZ : " + (mrzValid ? "VALIDE" : "INVALIDE"), mrzValid);
                         }
@@ -212,20 +225,19 @@ public class Display2Activity extends AppCompatActivity {
                         if (visualZone != null) {
                             boolean textConsistent = visualZone.optJSONObject("textConsistency") != null
                                     && visualZone.optJSONObject("textConsistency").optBoolean("consistent", false);
+                            textConsistencyStatusText = textConsistent ? "COHÉRENT" : "INCOHÉRENT";
                             updateStatus(textConsistencyStatus, textConsistencyIcon,
                                     "Cohérence du texte : " + (textConsistent ? "COHÉRENT" : "INCOHÉRENT"), textConsistent);
 
                             JSONObject ocrConfidence = visualZone.optJSONObject("ocrConfidence");
-
                             if (ocrConfidence != null) {
                                 double confidence = ocrConfidence.optDouble("confidence", 0) * 100;
 
                                 String text = String.format(Locale.getDefault(),
                                         "Confiance OCR : %.2f%%", confidence);
-
+                                ocrConfidenceStatusText = String.format(Locale.getDefault(), "%.2f%%", confidence);
                                 // Définir un seuil
                                 boolean isHighConfidence = confidence >= 90.0;
-
                                 // Utiliser updateStatus pour icône + texte
                                 updateStatus(ocrConfidenceStatus, ocrConfidenceIcon, text, isHighConfidence);
                             }
@@ -238,11 +250,13 @@ public class Display2Activity extends AppCompatActivity {
                             if (front != null) {
                                 // Screenshot
                                 boolean isScreenshot = front.optBoolean("looksLikeScreenshot", false);
+                                screenshotStatusText = isScreenshot ? "OUI" : "NON";
                                 updateStatus(screenshotStatus, screenshotIcon,
                                         "Capture d'écran : " + (isScreenshot ? "OUI" : "NON"), !isScreenshot);
 
                                 // Print copy
                                 boolean isPrintCopy = front.optBoolean("looksLikePrintCopy", false);
+                                printCopyStatusText = isPrintCopy ? "OUI" : "NON";
                                 updateStatus(printCopyStatus, printCopyIcon,
                                         "Copie imprimée : " + (isPrintCopy ? "OUI" : "NON"), !isPrintCopy);
                             }
@@ -250,6 +264,7 @@ public class Display2Activity extends AppCompatActivity {
 
                         enableControls();
                         hideProgress();
+                        //navigateToCustomerData();
 
                     } catch (Exception e) {
                         handleInspectionError("Erreur de traitement", e);
@@ -268,10 +283,12 @@ public class Display2Activity extends AppCompatActivity {
 
         readDocBtn.setOnClickListener(v -> {
             if (!isDocumentInspected) {
+                inspectDocument();
                 Toast.makeText(this, "Inspection du document en cours...", Toast.LENGTH_SHORT).show();
                 return;
+            }else {
+                navigateToCustomerData();
             }
-            navigateToCustomerData();
         });
 
         findViewById(R.id.readNfcBtn).setOnClickListener(v -> {
@@ -357,13 +374,42 @@ public class Display2Activity extends AppCompatActivity {
         documentImageView.setRotation(rotation);
     }
 
+    /*private void navigateToCustomerData() {
+        if (customerId != null) {
+            Intent intent = new Intent(this, CustomerDataActivity.class);
+            intent.putExtra("customerId", customerId);
+
+            intent.putExtra("expirationStatus", expirationStatusText);
+            intent.putExtra("mrzStatus", mrzStatusText);
+            intent.putExtra("textConsistencyStatus", textConsistencyStatusText);
+            intent.putExtra("ocrConfidenceStatus", ocrConfidenceStatusText);
+            intent.putExtra("screenshotStatus", screenshotStatusText);
+            intent.putExtra("printCopyStatus", printCopyStatusText);
+            intent.putExtra("ageComparison", ageComparisonStatus);
+            intent.putExtra("genderComparison", genderComparisonStatus);
+
+            startActivity(intent);
+        }
+    }*/
+
     private void navigateToCustomerData() {
         if (customerId != null) {
+            SessionData data = SessionData.getInstance();
+            data.expirationStatus = expirationStatusText;
+            data.mrzStatus = mrzStatusText;
+            data.printCopyStatus = printCopyStatusText;
+            data.textConsistencyStatus = textConsistencyStatusText;
+            data.ocrConfidenceStatus = ocrConfidenceStatusText;
+            data.screenshotStatus = screenshotStatusText;
+            data.ageComparison = ageComparisonStatus;
+            data.genderComparison = genderComparisonStatus;
+
             Intent intent = new Intent(this, CustomerDataActivity.class);
             intent.putExtra("customerId", customerId);
             startActivity(intent);
         }
     }
+
 
     private void loadDocumentImage() {
         showProgress();
@@ -404,13 +450,6 @@ public class Display2Activity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == 1001 && resultCode == RESULT_OK && data != null) {
-
-            // Récupérer le selfie s'il existe
-           /* Bitmap selfie = data.getParcelableExtra("selfieBitmap");
-            if (selfie != null) {
-                CustomerDataActivity.selfieBitmap = selfie; // stocker pour CustomerDataActivity
-            }
-*/
             // Rediriger vers CustomerDataActivity
             Intent intent = new Intent(this, CustomerDataActivity.class);
             intent.putExtra("customerId", customerId);

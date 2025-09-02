@@ -66,6 +66,7 @@ public class Page3Fragment extends Fragment {
         CustomerDataActivity.selfieBitmap = null;
         CustomerDataActivity.similarityScore = null;
         CustomerDataActivity.rfidSimilarityScore = null;
+        CustomerDataActivity.rfidBitmap = null;
     }
 
     public static Page3Fragment newInstance(String customerId, byte[] faceImageBytes) {
@@ -85,6 +86,10 @@ public class Page3Fragment extends Fragment {
             faceImageBytes = getArguments().getByteArray("faceImage");
             if (faceImageBytes != null) {
                 rfidBitmap = BitmapFactory.decodeByteArray(faceImageBytes, 0, faceImageBytes.length);
+
+                // Assign the RFID bitmap to the static variable in CustomerDataActivity
+                CustomerDataActivity.rfidBitmap = rfidBitmap;
+
             }
         }
     }
@@ -168,13 +173,6 @@ public class Page3Fragment extends Fragment {
             }
         });
 
-        // C'est ici que vous définissez ce qui se passe lorsque l'utilisateur clique sur le bouton
-       /* btnCaptureSelfie.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), SelfieCameraActivity.class);
-            intent.putExtra("customerId", customerId);
-            // Utilisez startActivityForResult pour que ce fragment reçoive le résultat
-            startActivityForResult(intent, SELFIE_CAPTURE_REQUEST_CODE);
-        });*/
         // Remplacer l'ancien bouton par le nouveau conteneur
         selfieCameraButtonContainer.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), SelfieCameraActivity.class);
@@ -469,7 +467,7 @@ public class Page3Fragment extends Fragment {
         if (CustomerDataActivity.rfidSimilarityScore != null) {
             updateRfidSimilarityUI(CustomerDataActivity.rfidSimilarityScore);
         }
-        // Relancer la comparaison RFID si un selfie est présent, RFID bitmap est présent, et le score RFID est null
+       /* // Relancer la comparaison RFID si un selfie est présent, RFID bitmap est présent, et le score RFID est null
         if (CustomerDataActivity.selfieBitmap != null && rfidBitmap != null && CustomerDataActivity.rfidSimilarityScore == null) {
             compareRfidAndSelfie(CustomerDataActivity.selfieBitmap, rfidBitmap);
         }
@@ -477,11 +475,33 @@ public class Page3Fragment extends Fragment {
         // Vérifier et potentiellement relancer la comparaison Portrait vs Selfie si nécessaire
         if (CustomerDataActivity.selfieBitmap != null && CustomerDataActivity.portraitBitmap != null && CustomerDataActivity.similarityScore == null) {
             checkSimilarityScore(customerId);
-        }
+        }*/
 
         if (rfidComparisonCard != null) {
             rfidComparisonCard.setVisibility(rfidBitmap != null ? View.VISIBLE : View.GONE);
         }
+    }
+
+    public JSONObject getPdfData() {
+        JSONObject data = new JSONObject();
+        try {
+            if (CustomerDataActivity.similarityScore != null) {
+                // Le score est un double entre 0.0 et 1.0, le convertir en pourcentage pour l'affichage
+                data.put("portraitSelfieScore", String.format("%.1f%%", CustomerDataActivity.similarityScore * 100));
+            } else {
+                data.put("portraitSelfieScore", "N/A");
+            }
+
+            if (CustomerDataActivity.rfidSimilarityScore != null) {
+                // Le score RFID est déjà un entier en pourcentage
+                data.put("rfidSelfieScore", CustomerDataActivity.rfidSimilarityScore + "%");
+            } else {
+                data.put("rfidSelfieScore", "N/A");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Erreur lors de la création de l'objet JSON pour le PDF", e);
+        }
+        return data;
     }
 }
 

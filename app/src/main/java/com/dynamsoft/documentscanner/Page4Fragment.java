@@ -309,18 +309,6 @@ public class Page4Fragment extends Fragment {
                 }
             }
 
-            // Remplir les TextView MRZ
-          /*  tvGivenName.setText(givenName);
-            tvSurnameMrz.setText(surname);
-            tvDobMrz.setText(dob);
-            tvNationalityMrz.setText(nationality);
-            tvGenderMrz.setText(gender);
-
-            tvDocumentNumberMrz.setText(documentNumber);
-            tvDateOfExpiryMrz.setText(dateOfExpiry);
-            tvDocumentTypeMrz.setText(documentCode);  // documentCode modifié si "P"
-            tvIssuingAuthorityMrz.setText(issuingAuthority);*/
-
             tvGivenName.setText(getNonEmpty(givenName));
             tvSurnameMrz.setText(getNonEmpty(surname));
             tvDobMrz.setText(getNonEmpty(dob));
@@ -622,5 +610,48 @@ public class Page4Fragment extends Fragment {
 
     private String getNonEmpty(String value) {
         return (value != null && !value.trim().isEmpty()) ? value : "-";
+    }
+
+    // Dans votre classe Page4Fragment
+    public JSONObject getPdfData() {
+        JSONObject data = new JSONObject();
+        try {
+            // Collecte les données de la puce (TextViews de gauche)
+            JSONObject rfidData = new JSONObject();
+            rfidData.put("surname", getNonEmpty(surnameTextView.getText().toString()));
+            rfidData.put("givenName", getNonEmpty(nameTextView.getText().toString()));
+            rfidData.put("gender", getNonEmpty(genderTextView.getText().toString()));
+            rfidData.put("dateOfBirth", getNonEmpty(birthDateTextView.getText().toString()));
+            rfidData.put("dateOfExpiry", getNonEmpty(expiryDateTextView.getText().toString()));
+            rfidData.put("documentNumber", getNonEmpty(serialNumberTextView.getText().toString()));
+            rfidData.put("nationality", getNonEmpty(nationalityTextView.getText().toString()));
+            rfidData.put("docType", getNonEmpty(docTypeTextView.getText().toString()));
+            rfidData.put("issuerAuthority", getNonEmpty(issuerAuthorityTextView.getText().toString()));
+            data.put("rfidData", rfidData);
+
+            // Collecte les données MRZ (TextViews de droite)
+            JSONObject mrzData = new JSONObject();
+            mrzData.put("surname", getNonEmpty(tvSurnameMrz.getText().toString()));
+            mrzData.put("givenName", getNonEmpty(tvGivenName.getText().toString()));
+            mrzData.put("gender", getNonEmpty(tvGenderMrz.getText().toString()));
+            mrzData.put("dateOfBirth", getNonEmpty(tvDobMrz.getText().toString()));
+            mrzData.put("dateOfExpiry", getNonEmpty(tvDateOfExpiryMrz.getText().toString()));
+            mrzData.put("documentNumber", getNonEmpty(tvDocumentNumberMrz.getText().toString()));
+            mrzData.put("nationality", getNonEmpty(tvNationalityMrz.getText().toString()));
+            mrzData.put("docType", getNonEmpty(tvDocumentTypeMrz.getText().toString()));
+            mrzData.put("issuerAuthority", getNonEmpty(tvIssuingAuthorityMrz.getText().toString()));
+            data.put("mrzData", mrzData);
+
+            // Ajoute le score de similarité faciale
+            if (similarityScore != -1) {
+                data.put("facialSimilarityScore", similarityScore);
+            } else {
+                data.put("facialSimilarityScore", "N/A");
+            }
+
+        } catch (JSONException e) {
+            Log.e(TAG, "Erreur lors de la création de l'objet JSON pour le PDF", e);
+        }
+        return data;
     }
 }
