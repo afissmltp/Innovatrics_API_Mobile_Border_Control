@@ -73,7 +73,7 @@ public class Page4Fragment extends Fragment {
     private ImageView iconSurname, iconGivenName, iconGender, iconDob, iconExpiryDate,
             iconDocNum, iconNationality, iconDocType, iconIssuer;
     private LinearLayout scoreContainerPortraitSelfie;
-
+    private boolean customerDataFetched = false;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +83,7 @@ public class Page4Fragment extends Fragment {
             comparisonDone = savedInstanceState.getBoolean(KEY_COMPARISON_DONE, false);
             portraitLoaded = savedInstanceState.getBoolean(KEY_PORTRAIT_LOADED, false);
             similarityScore = savedInstanceState.getInt(KEY_SCORE, -1);
+            customerDataFetched = savedInstanceState.getBoolean("customer_data_fetched", false);
 
             // Restaurer les bitmaps
             byte[] portraitBytes = savedInstanceState.getByteArray(KEY_PORTRAIT);
@@ -121,11 +122,16 @@ public class Page4Fragment extends Fragment {
             similarityScoreTextView.setText("Similarité: " + similarityScore + "%");
         }
 
-        // Charger le portrait si nécessaire
-        if (!portraitLoaded && customerId != null && cachedPortraitBitmap == null) {
-            loadDocumentPortrait();
-        } else if (!comparisonDone) {
-            checkAndCompareFaces();
+        if (customerId != null) {
+            if (!customerDataFetched) {
+                fetchCustomerData();
+            }
+
+            if (!portraitLoaded && cachedPortraitBitmap == null) {
+                loadDocumentPortrait();
+            } else if (!comparisonDone && faceImageBitmap != null && cachedPortraitBitmap != null) {
+                checkAndCompareFaces();
+            }
         }
         faceImageView.setOnClickListener(v -> {
             Bitmap bitmap = ((BitmapDrawable) faceImageView.getDrawable()).getBitmap();
@@ -149,6 +155,7 @@ public class Page4Fragment extends Fragment {
         outState.putBoolean(KEY_COMPARISON_DONE, comparisonDone);
         outState.putBoolean(KEY_PORTRAIT_LOADED, portraitLoaded);
         outState.putInt(KEY_SCORE, similarityScore);
+        outState.putBoolean("customer_data_fetched", customerDataFetched);
 
         // Sauvegarder les bitmaps
         if (cachedPortraitBitmap != null) {
@@ -228,11 +235,14 @@ public class Page4Fragment extends Fragment {
 
 
             customerId = bundle.getString("customerId");
-            fetchCustomerData();
+            //fetchCustomerData();
         }
     }
 
     private void fetchCustomerData() {
+        if (customerDataFetched) return; // Éviter les appels multiples
+
+        customerDataFetched = true; // Marquer comme récupéré
         customerService.getCustomer(customerId, new CustomerService.ApiCallback() {
             @Override
             public void onSuccess(JSONObject response) {
@@ -258,6 +268,7 @@ public class Page4Fragment extends Fragment {
             @Override
             public void onFailure(Exception e) {
                 if (getActivity() == null) return; // sécurité
+                customerDataFetched = false; // Réinitialiser en cas d'échec
 
                 requireActivity().runOnUiThread(() -> {
                     Toast.makeText(requireContext(),
@@ -362,52 +373,11 @@ public class Page4Fragment extends Fragment {
         }
     }
 
-
-    /**
-     * Reformate une date MRZ au format dd.MM.yyyy
-     */
-    private String formatMrzDate(String mrzDate) {
-        try {
-            if (mrzDate.contains("-")) {
-                // Format yyyy-M-d -> dd.MM.yyyy
-                SimpleDateFormat mrzFormat = new SimpleDateFormat("yyyy-M-d", Locale.getDefault());
-                Date date = mrzFormat.parse(mrzDate);
-                if (date != null) {
-                    SimpleDateFormat desiredFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                    return desiredFormat.format(date);
-                }
-            } else if (mrzDate.length() == 6) {
-                // Format MRZ court : yyMMdd -> dd.MM.yyyy
-                SimpleDateFormat mrzShortFormat = new SimpleDateFormat("yyMMdd", Locale.getDefault());
-                Date date = mrzShortFormat.parse(mrzDate);
-                if (date != null) {
-                    SimpleDateFormat desiredFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                    return desiredFormat.format(date);
-                }
-            }
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        return mrzDate; // fallback si erreur
-    }
     private void updateFragmentData(JSONObject response) {
         // Juste stocker la réponse brute dans une variable
         this.customerData = response;
     }
-    private void showImageFullscreen(Bitmap bitmap) {
-        if (getActivity() == null) return; // sécurité
 
-        Dialog dialog = new Dialog(getActivity(), android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-        dialog.setContentView(R.layout.dialog_fullscreen_image);
-
-        ImageView imageView = dialog.findViewById(R.id.dialogImageView);
-        imageView.setImageBitmap(bitmap);
-
-        // Fermer au clic
-        imageView.setOnClickListener(v -> dialog.dismiss());
-
-        dialog.show();
-    }
     private void checkAndCompareFaces() {
         if (faceImageBitmap != null && cachedPortraitBitmap != null && !comparisonInProgress && !comparisonDone) {
             compareFaces();
@@ -507,7 +477,7 @@ public class Page4Fragment extends Fragment {
         int textColor;
 
         // Appliquer la logique de couleur selon le pourcentage
-        if (percentage >= 80) {
+        if (percentage >= 70) {
             bgColor = ContextCompat.getColor(requireContext(), R.color.score_perfect_bg);
             textColor = ContextCompat.getColor(requireContext(), R.color.score_perfect_text);
             Toast.makeText(getContext(), "Fort taux de similarité (" + percentage + "%)", Toast.LENGTH_SHORT).show();
@@ -554,8 +524,9 @@ public class Page4Fragment extends Fragment {
     }
 
     private void loadDocumentPortrait() {
+        if (portraitLoaded) return; // Éviter les chargements multiples
+
         try {
-            Log.d(TAG, "Chargement du portrait du document pour customerId: " + customerId);
             customerService.getDocumentPortrait(customerId, new CustomerService.ApiCallback() {
                 @Override
                 public void onSuccess(JSONObject response) {
@@ -574,20 +545,16 @@ public class Page4Fragment extends Fragment {
                                     portraitLoaded = true;
                                     docPortrait.setImageBitmap(bitmap);
 
-                                    if (!comparisonDone) {
+                                    if (!comparisonDone && faceImageBitmap != null) {
                                         checkAndCompareFaces();
                                     }
-
-                                    Toast.makeText(getContext(), "Image portrait du document chargée avec succès.", Toast.LENGTH_LONG).show();
-                                } else {
-                                    handlePortraitError("Erreur de décodage du portrait du document");
                                 }
                             });
 
                         } catch (Exception e) {
                             new Handler(Looper.getMainLooper()).post(() -> {
                                 if (!isAdded()) return;
-                                handlePortraitError("Erreur lors du traitement de l'image du portrait du document: " + e.getMessage());
+                                portraitLoaded = false; // Réinitialiser en cas d'erreur
                             });
                         }
                     });
@@ -596,15 +563,14 @@ public class Page4Fragment extends Fragment {
                 @Override
                 public void onFailure(Exception e) {
                     if (!isAdded()) return;
-                    handlePortraitError("Erreur réseau (portrait): " + e.getMessage());
+                    portraitLoaded = false; // Réinitialiser en cas d'erreur
                 }
             });
 
         } catch (Exception e) {
-            handlePortraitError("Erreur lors du chargement du portrait du document: " + e.getMessage());
+            portraitLoaded = false; // Réinitialiser en cas d'erreur
         }
     }
-
     private void handlePortraitError(String message) {
         Log.e(TAG, message);
         if (isAdded()) {
@@ -634,7 +600,33 @@ public class Page4Fragment extends Fragment {
             faceImageBitmap.recycle();
         }
     }
-
+    /**
+     * Reformate une date MRZ au format dd.MM.yyyy
+     */
+    private String formatMrzDate(String mrzDate) {
+        try {
+            if (mrzDate.contains("-")) {
+                // Format yyyy-M-d -> dd.MM.yyyy
+                SimpleDateFormat mrzFormat = new SimpleDateFormat("yyyy-M-d", Locale.getDefault());
+                Date date = mrzFormat.parse(mrzDate);
+                if (date != null) {
+                    SimpleDateFormat desiredFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                    return desiredFormat.format(date);
+                }
+            } else if (mrzDate.length() == 6) {
+                // Format MRZ court : yyMMdd -> dd.MM.yyyy
+                SimpleDateFormat mrzShortFormat = new SimpleDateFormat("yyMMdd", Locale.getDefault());
+                Date date = mrzShortFormat.parse(mrzDate);
+                if (date != null) {
+                    SimpleDateFormat desiredFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                    return desiredFormat.format(date);
+                }
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return mrzDate; // fallback si erreur
+    }
     private String getNonEmpty(String value) {
         return (value != null && !value.trim().isEmpty()) ? value : "-";
     }

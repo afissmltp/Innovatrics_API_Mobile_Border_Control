@@ -112,13 +112,13 @@
 
                 <TextView
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_weight="0.9"
-                    android:text="Données puce"
-                    android:textStyle="bold"
                     android:gravity="center"
+                    android:padding="4dp"
+                    android:text="Données puce"
                     android:textColor="@android:color/black"
-                    android:padding="4dp"/>
+                    android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="0dp"
@@ -132,12 +132,12 @@
 
                 <TextView
                     android:layout_width="50dp"
-                    android:layout_height="wrap_content"
-                    android:text="Match"
-                    android:textStyle="bold"
+                    android:layout_height="match_parent"
                     android:gravity="center"
+                    android:padding="4dp"
+                    android:text="Match"
                     android:textColor="@android:color/black"
-                    android:padding="4dp"/>
+                    android:textStyle="bold" />
             </TableRow>
 
             <!-- Nom -->
