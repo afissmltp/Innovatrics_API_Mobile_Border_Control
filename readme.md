@@ -1,25 +1,43 @@
-## Android Document Scanner
+## 📄 Lecture de Document SMLTP
 
-Android Document Scanner using [Dynamsoft Document Normalizer](https://www.dynamsoft.com/document-normalizer/docs/introduction/).
+Cette section décrit le processus complet de lecture et d'analyse d'un document avec l'application.
 
-You can [apply for a trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) and update [this line](https://github.com/xulihang/Android-Document-Scanner/blob/78ba04916bb395ae82ddd586bd6ab0c74def39ab/app/src/main/java/com/dynamsoft/documentscanner/MainActivity.java#L75) to use Dynamsoft Document Normalizer.
+---
+
+### 🔄 Processus de Scan de Document
+
+1. **Démarrer le processus**  
+   - Cliquer sur **Lecture Document**.
+
+2. **Capture du document**  
+   - La caméra s'ouvre.  
+   - Positionner correctement le document pour une capture optimale.
+
+3. **Barre de menu supérieure**  
+   Une fois dans l’interface de capture, un menu avec **4 boutons** est affiché en haut :  
+   - 🏠 **Home** : Retourne à la page d’accueil.  
+   - 📡 **Lecture NFC** : Lance la lecture des données NFC (si le document possède une puce).  
+   - 📷 **Capture** : Permet de relancer la capture avec la caméra.  
+   - 📤 **Partager** : Permet de partager le document.
+
+4. **Affichage des informations extraites**  
+   Après la capture, l’utilisateur est redirigé vers une interface qui affiche :  
+   - 📸 **Portrait extrait** du document.  
+   - 🧾 **Informations personnelles** de l’utilisateur (nom, prénom, date de naissance, etc.).
+
+5. **Navigation par onglets**  
+   En bas de l’écran, un système d’onglets permet d’accéder à plusieurs sections :  
+   - 🏷️ **INFO** : Données du document.  
+   - ✅ **Authenticité** : Vérification de l’authenticité du document.  
+   - 🖼️ **Images** : Portrait extrait, photo du document, et image RFID (si disponible).  
+   - 🔎 **Check** : Comparaison et matching :
+     - Portrait extrait du document 🆚 Selfie.
+     - Photo RFID 🆚 Selfie.
+   - 🔄 **Matching Données** : Comparaison entre les données lues de la puce RFID et celles extraites du document.
+
+6. **Partage des résultats**  
+   L’utilisateur peut exporter les résultats sous forme de fichier **PDF** et les partager via **WhatsApp** ou d’autres applications.
 
 
-### Document Scanning Process
 
-1. Start the camera using CameraX and analyse the frames to detect the boundary of documents. When the IOU of three consecutive detected polygons are over 90%, take a photo.
-2. After the photo is taken, the users are directed to a cropping activity. They can drag the corner points to adjust the detected polygons.
-3. If the user confirms that the polygon is correct, the app then runs perspective correction and cropping to get a normalized document image. Users can rotate the image and set the color mode (binary, grayscale and color) of the image.
-
-A demo video of the whole process.
-
-<video src="https://user-images.githubusercontent.com/5462205/186093735-b1622e5e-9c50-4fe3-974a-de29a881768f.mp4" data-canonical-src="https://user-images.githubusercontent.com/5462205/186093735-b1622e5e-9c50-4fe3-974a-de29a881768f.mp4" controls="controls" muted="muted" class="d-block rounded-bottom-2 border-top width-fit" style="max-width:100%;max-height:640px;">
-</video>
-
-### Features
-
-1. live detection of documents
-2. auto scan
-3. edit detected polygons of documents
-4. support three color mode: binary, grayscale and color
 
