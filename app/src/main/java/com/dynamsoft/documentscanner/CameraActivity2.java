@@ -249,7 +249,7 @@ public class CameraActivity2 extends AppCompatActivity {
                 runOnUiThread(() -> {
                     Log.d("API_RESPONSE", response.toString());
                     Toast.makeText(CameraActivity2.this, "Upload réussi", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(CameraActivity2.this, Display2Activity.class)
+                    startActivity(new Intent(CameraActivity2.this, CustomerDataActivity.class)
                             .putExtra("customerId", customerId));
                     finish();
                 });

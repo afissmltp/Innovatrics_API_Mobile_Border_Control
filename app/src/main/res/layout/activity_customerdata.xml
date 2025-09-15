@@ -24,7 +24,7 @@
         android:layout_height="0dp"
         android:fillViewport="true"
         app:layout_constraintTop_toBottomOf="@id/simpleToolbar"
-        app:layout_constraintBottom_toTopOf="@id/bottomBar"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -171,21 +171,34 @@
                 </LinearLayout>
 
                 <!-- Photo document -->
-                <com.google.android.material.imageview.ShapeableImageView
+                <com.jsibbold.zoomage.ZoomageView
                     android:id="@+id/imageView"
                     android:layout_width="100dp"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
-                    tools:srcCompat="@tools:sample/avatars" />
-
+                    tools:srcCompat="@tools:sample/avatars"
+                    app:zoomage_zoomable="true"
+                    app:zoomage_translatable="true"
+                    app:zoomage_autoCenter="true"
+                    app:zoomage_animateOnReset="true"
+                    app:zoomage_maxScale="8"
+                    app:zoomage_minScale="0.6"/>
             </LinearLayout>
 
             <!-- Tabs -->
+            <!-- layout.xml -->
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tab_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/white"/>
+                android:background="@color/white"
+                app:tabMode="scrollable"
+                app:tabMinWidth="0dp"
+                app:tabPaddingStart="10dp"
+                app:tabPaddingEnd="18dp"
+                app:tabTextAppearance="@style/TabTextAppearance"
+                app:tabIndicatorFullWidth="false"/>
+
 
             <!-- ViewPager -->
             <androidx.viewpager.widget.ViewPager
@@ -196,12 +209,4 @@
     </ScrollView>
 
     <!-- Barre fixe en bas -->
-    <include
-        android:id="@+id/bottomBar"
-        layout="@layout/bottom_control_bar"
-        android:layout_width="0dp"
-        android:layout_height="37dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

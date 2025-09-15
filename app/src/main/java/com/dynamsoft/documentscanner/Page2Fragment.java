@@ -13,31 +13,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
-
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
-
-import org.json.JSONObject;
-
-import android.app.Dialog;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.os.Bundle;
-import android.util.Base64;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-
+import com.jsibbold.zoomage.ZoomageView;
 
 import org.json.JSONObject;
 
@@ -51,21 +30,14 @@ public class Page2Fragment extends Fragment {
     private static Bitmap cachedDocumentPortrait = null;
     private static String cachedDocumentPortraitCustomerId = null; // Ajouter un ID pour le portrait
 
-    private ImageView rectoImageView;
-    private ImageView portraitImageView;
-    private ImageView faceImageView;
+    private ZoomageView rectoImageView;
+    private ZoomageView portraitImageView;
+    private ZoomageView faceImageView;
 
     /**
      * Méthode statique pour vider le cache des images.
      * Appelée depuis l'activité principale.
      */
-    public static void clearDocumentImageCache() {
-        cachedDocumentBitmap = null;
-        cachedDocumentBitmapCustomerId = null;
-        cachedDocumentPortrait = null;
-        cachedDocumentPortraitCustomerId = null;
-    }
-
     public static Page2Fragment newInstance(String customerId, byte[] faceImageBytes) {
         Page2Fragment fragment = new Page2Fragment();
         Bundle args = new Bundle();
@@ -108,34 +80,26 @@ public class Page2Fragment extends Fragment {
 
         portraitImageView.setOnClickListener(v -> {
             Bitmap bitmap = ((BitmapDrawable) portraitImageView.getDrawable()).getBitmap();
-            showImageFullscreen(bitmap);
+            FullscreenImageDialog.show(requireContext(), bitmap, () -> {
+                Log.d("FullscreenDialog", "portrait Image saved callback");
+            });
         });
 
         faceImageView.setOnClickListener(v -> {
             Bitmap bitmap = ((BitmapDrawable) faceImageView.getDrawable()).getBitmap();
-            showImageFullscreen(bitmap);
+            FullscreenImageDialog.show(requireContext(), bitmap, () -> {
+                Log.d("FullscreenDialog", "face Image saved callback");
+            });
         });
         rectoImageView.setOnClickListener(v -> {
             Bitmap bitmap = ((BitmapDrawable) rectoImageView.getDrawable()).getBitmap();
-            showImageFullscreen(bitmap);
+            FullscreenImageDialog.show(requireContext(), bitmap, () -> {
+                Log.d("FullscreenDialog", "face Image saved callback");
+            });
         });
 
         return view;
     }
-
-    private void showImageFullscreen(Bitmap bitmap) {
-        if (getActivity() == null) return;
-
-        Dialog dialog = new Dialog(getActivity(), android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-        dialog.setContentView(R.layout.dialog_fullscreen_image);
-
-        ImageView imageView = dialog.findViewById(R.id.dialogImageView);
-        imageView.setImageBitmap(bitmap);
-
-        imageView.setOnClickListener(v -> dialog.dismiss());
-        dialog.show();
-    }
-
     private boolean loadFaceImage() {
         Bundle args = getArguments();
         if (args != null) {
@@ -231,5 +195,11 @@ public class Page2Fragment extends Fragment {
                 }
             }
         });
+    }
+    public static void clearDocumentImageCache() {
+        cachedDocumentBitmap = null;
+        cachedDocumentBitmapCustomerId = null;
+        cachedDocumentPortrait = null;
+        cachedDocumentPortraitCustomerId = null;
     }
 }

@@ -36,6 +36,10 @@ public class HomeActivity extends AppCompatActivity {
     private LinearLayout loadingLayout;
     private ProgressBar progressBar;
     private TextView loadingText;
+
+    // Indicateur pour éviter les clics multiples
+    private boolean isActionInProgress = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,28 +62,43 @@ public class HomeActivity extends AppCompatActivity {
         loadingLayout = findViewById(R.id.loading_layout);
         progressBar = findViewById(R.id.progress_bar);
         loadingText = findViewById(R.id.loading_text);
-        clickableLayout.setOnClickListener(v -> onScanButtonClicked());
+
+        // Ajout de la vérification de l'indicateur dans le listener
+        clickableLayout.setOnClickListener(v -> {
+            if (!isActionInProgress) {
+                onScanButtonClicked();
+            }
+        });
 
         showLoadingUI();
         createCustomer();
     }
+
     private void onScanButtonClicked() {
+        // Marquer l'action comme en cours
+        isActionInProgress = true;
+
         if (!isCustomerReady()) {
+            isActionInProgress = false; // Réinitialiser si le client n'est pas prêt
             return;
         }
 
         if (!hasCameraPermission()) {
             requestCameraPermission();
+            // Pas besoin de réinitialiser isActionInProgress ici, onRequestPermissionsResult s'en chargera
             return;
         }
         // Si on arrive ici, la permission est accordée
         launchCameraActivity();
     }
+
     private void launchCameraActivity() {
         createDocument(() -> {
             Intent intent = new Intent(this, CameraActivity2.class);
             intent.putExtra("customerId", customerId);
             startActivity(intent);
+            // Réinitialiser l'indicateur après le lancement de l'activité caméra
+            isActionInProgress = false;
         });
     }
 
@@ -103,16 +122,17 @@ public class HomeActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults); // Important d'appeler super
         if (requestCode == CAMERA_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                onScanButtonClicked();
+                onScanButtonClicked(); // La permission est accordée, on relance l'action
             } else {
                 Toast.makeText(this, "Permission caméra requise", Toast.LENGTH_SHORT).show();
+                isActionInProgress = false; // Réinitialiser l'indicateur si la permission est refusée
             }
-        } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
+
     private void createCustomer() {
         customerService.createCustomer(new CustomerService.ApiCallback() {
             @Override
@@ -148,7 +168,10 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void createDocument(Runnable onSuccessAction) {
-        if (!isCustomerReady()) return;
+        if (!isCustomerReady()) {
+            isActionInProgress = false; // Réinitialiser si le client n'est pas prêt
+            return;
+        }
 
         try {
             JSONObject requestBody = createDocumentRequestBody();
@@ -167,12 +190,14 @@ public class HomeActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         Toast.makeText(HomeActivity.this, "Échec création document. Réessayez.", Toast.LENGTH_SHORT).show();
                         Log.e(TAG, "Erreur API création document", e);
+                        isActionInProgress = false; // Réinitialiser l'indicateur en cas d'échec de création du document
                     });
                 }
             });
         } catch (JSONException e) {
             Toast.makeText(this, "Erreur configuration JSON", Toast.LENGTH_SHORT).show();
             Log.e(TAG, "Erreur JSON création document", e);
+            isActionInProgress = false; // Réinitialiser l'indicateur en cas d'erreur JSON
         }
     }
 
@@ -212,4 +237,3 @@ public class HomeActivity extends AppCompatActivity {
         clickableLayout.setVisibility(LinearLayout.GONE);
     }
 }
-

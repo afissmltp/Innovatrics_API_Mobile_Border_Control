@@ -1,6 +1,7 @@
 package com.dynamsoft.documentscanner;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -29,6 +30,8 @@ import androidx.fragment.app.Fragment;
 
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.FaceMatchingService;
+import com.dynamsoft.documentscanner.util.ImageUtils;
+import com.jsibbold.zoomage.ZoomageView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,34 +42,33 @@ import java.io.IOException;
 
 public class Page3Fragment extends Fragment {
     private static final String TAG = "Page3Fragment";
-    private static final int SELFIE_CAPTURE_REQUEST_CODE = 2002; // Un code de requête unique pour ce fragment
+    private static final int SELFIE_CAPTURE_REQUEST_CODE = 1001;
 
     // Vues
-    private ImageView portraitImageView, selfieImageView, rfidImageView, selfieImageView2;
+    private ZoomageView portraitImageView, selfieImageView, rfidImageView, selfieImageView2;
     private TextView similarityScoreTextView;
     private TextView rfidSimilarityScoreTextView;
     private CardView rfidComparisonCard;
     private LinearLayout scoreContainerPortraitSelfie;
     private LinearLayout scoreContainerRfidSelfie;
-    private Button btnCaptureSelfie; // Référence au bouton de capture/recapture
     private CardView selfieCameraButtonContainer;
     private CardView selfieCameraButtonContainer2;
-
 
     // Données
     private byte[] faceImageBytes;
     private String customerId;
     private Bitmap rfidBitmap;
+    private ProgressDialog currentProgressDialog;
 
     /**
      * Public static method to clear the selfie and all associated scores.
-     * This ensures the UI is reset when a new document is scanned.
      */
     public static void clearSelfieAndScores() {
         CustomerDataActivity.selfieBitmap = null;
         CustomerDataActivity.similarityScore = null;
         CustomerDataActivity.rfidSimilarityScore = null;
         CustomerDataActivity.rfidBitmap = null;
+        CustomerDataActivity.portraitBitmap=null;
     }
 
     public static Page3Fragment newInstance(String customerId, byte[] faceImageBytes) {
@@ -86,10 +88,7 @@ public class Page3Fragment extends Fragment {
             faceImageBytes = getArguments().getByteArray("faceImage");
             if (faceImageBytes != null) {
                 rfidBitmap = BitmapFactory.decodeByteArray(faceImageBytes, 0, faceImageBytes.length);
-
-                // Assign the RFID bitmap to the static variable in CustomerDataActivity
                 CustomerDataActivity.rfidBitmap = rfidBitmap;
-
             }
         }
     }
@@ -97,8 +96,16 @@ public class Page3Fragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_page3, container, false);
+        initializeViews(view);
+        setupImageClickListeners();
+        loadExistingImages();
+        updateSelfieUI();
+        checkExistingScores();
 
-        // Initialiser les vues
+        return view;
+    }
+
+    private void initializeViews(View view) {
         portraitImageView = view.findViewById(R.id.portraitImageView);
         selfieImageView = view.findViewById(R.id.imageView2);
         selfieImageView2 = view.findViewById(R.id.selfieIMG);
@@ -108,130 +115,121 @@ public class Page3Fragment extends Fragment {
         rfidComparisonCard = view.findViewById(R.id.rfidComparisonCard);
         scoreContainerPortraitSelfie = view.findViewById(R.id.scoreContainerPortraitSelfie);
         scoreContainerRfidSelfie = view.findViewById(R.id.scoreContainerRfidSelfie);
-        //btnCaptureSelfie = view.findViewById(R.id.btnCaptureSelfie); // Initialisation du bouton
-
         selfieCameraButtonContainer = view.findViewById(R.id.selfieCameraButtonContainer);
         selfieCameraButtonContainer2 = view.findViewById(R.id.selfieCameraButtonContainer2);
+    }
 
-        // Charger les images existantes
+    private void setupImageClickListeners() {
+        portraitImageView.setOnClickListener(v -> openFullscreenImage(portraitImageView, "portrait"));
+        selfieImageView.setOnClickListener(v -> openFullscreenImage(selfieImageView, "selfie"));
+        rfidImageView.setOnClickListener(v -> openFullscreenImage(rfidImageView, "rfid"));
+        selfieImageView2.setOnClickListener(v -> openFullscreenImage(selfieImageView2, "selfie2"));
+
+        selfieCameraButtonContainer.setOnClickListener(v -> launchSelfieCamera());
+        selfieCameraButtonContainer2.setOnClickListener(v -> launchSelfieCamera());
+    }
+
+    private void openFullscreenImage(ImageView imageView, String type) {
+        if (imageView.getDrawable() != null) {
+            Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
+            FullscreenImageDialog.show(requireContext(), bitmap, () -> {
+                Log.d(TAG, type + " Image saved callback");
+            });
+        }
+    }
+
+    private void launchSelfieCamera() {
+        Intent intent = new Intent(getActivity(), SelfieCameraActivity.class);
+        intent.putExtra("customerId", customerId);
+        startActivityForResult(intent, SELFIE_CAPTURE_REQUEST_CODE);
+    }
+
+    private void loadExistingImages() {
         if (rfidBitmap != null) {
             rfidComparisonCard.setVisibility(View.VISIBLE);
             rfidImageView.setImageBitmap(rfidBitmap);
         } else {
             rfidComparisonCard.setVisibility(View.GONE);
         }
+
         if (CustomerDataActivity.portraitBitmap != null) {
             portraitImageView.setImageBitmap(CustomerDataActivity.portraitBitmap);
         }
+    }
 
-        updateSelfieUI(); // Appelle la méthode pour mettre à jour l'UI du selfie et du bouton
-
-        // Mettre à jour les scores si les variables statiques sont disponibles
+    private void checkExistingScores() {
         if (CustomerDataActivity.similarityScore != null) {
             updateSimilarityScoreText(CustomerDataActivity.similarityScore);
-        } else {
-            // Si le selfie est présent, essayer de relancer la comparaison Portrait vs Selfie
-            if (CustomerDataActivity.selfieBitmap != null && CustomerDataActivity.portraitBitmap != null) {
-                // Appelez checkSimilarityScore pour initier le calcul si nécessaire
-                // Cela devrait idéalement être géré après l'upload du selfie si ce n'est pas déjà fait.
-                // Cependant, pour s'assurer que l'UI est à jour même sans nouvel upload, nous vérifions ici.
-                checkSimilarityScore(customerId);
-            }
+        } else if (CustomerDataActivity.selfieBitmap != null && CustomerDataActivity.portraitBitmap != null) {
+            checkSimilarityScore(customerId);
         }
-
 
         if (CustomerDataActivity.rfidSimilarityScore != null) {
             updateRfidSimilarityUI(CustomerDataActivity.rfidSimilarityScore);
-        } else {
-            // Relancer la comparaison si les conditions sont remplies
-            if (CustomerDataActivity.selfieBitmap != null && rfidBitmap != null) {
-                compareRfidAndSelfie(CustomerDataActivity.selfieBitmap, rfidBitmap);
-            }
+        } else if (CustomerDataActivity.selfieBitmap != null && rfidBitmap != null) {
+            compareRfidAndSelfie(CustomerDataActivity.selfieBitmap, rfidBitmap);
         }
-
-        // Setup image click listeners
-        portraitImageView.setOnClickListener(v -> {
-            Bitmap bitmap = ((BitmapDrawable) portraitImageView.getDrawable()).getBitmap();
-            showImageFullscreen(bitmap);
-        });
-        selfieImageView.setOnClickListener(v -> {
-            // Seulement si une image est affichée, sinon le clic n'a pas de sens
-            if (selfieImageView.getDrawable() != null) {
-                Bitmap bitmap = ((BitmapDrawable) selfieImageView.getDrawable()).getBitmap();
-                showImageFullscreen(bitmap);
-            }
-        });
-        rfidImageView.setOnClickListener(v -> {
-            Bitmap bitmap = ((BitmapDrawable) rfidImageView.getDrawable()).getBitmap();
-            showImageFullscreen(bitmap);
-        });
-        selfieImageView2.setOnClickListener(v -> {
-            // Seulement si une image est affichée, sinon le clic n'a pas de sens
-            if (selfieImageView2.getDrawable() != null) {
-                Bitmap bitmap = ((BitmapDrawable) selfieImageView2.getDrawable()).getBitmap();
-                showImageFullscreen(bitmap);
-            }
-        });
-
-        // Remplacer l'ancien bouton par le nouveau conteneur
-        selfieCameraButtonContainer.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), SelfieCameraActivity.class);
-            intent.putExtra("customerId", customerId);
-            startActivityForResult(intent, SELFIE_CAPTURE_REQUEST_CODE);
-        });
-        selfieCameraButtonContainer2.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), SelfieCameraActivity.class);
-            intent.putExtra("customerId", customerId);
-            startActivityForResult(intent, SELFIE_CAPTURE_REQUEST_CODE);
-        });
-        return view;
-    }
-
-    private void showImageFullscreen(Bitmap bitmap) {
-        if (getActivity() == null) return;
-        Dialog dialog = new Dialog(getActivity(), android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-        dialog.setContentView(R.layout.dialog_fullscreen_image);
-        ImageView imageView = dialog.findViewById(R.id.dialogImageView);
-        imageView.setImageBitmap(bitmap);
-        imageView.setOnClickListener(v -> dialog.dismiss());
-        dialog.show();
     }
 
     private void compareRfidAndSelfie(Bitmap selfie, Bitmap rfidPortrait) {
-        ProgressDialog progressDialog = new ProgressDialog(getContext());
-        progressDialog.setMessage("Comparaison RFID vs Selfie en cours...");
-        progressDialog.setCancelable(false);
-        progressDialog.show();
+        dismissCurrentProgressDialog();
+        currentProgressDialog = new ProgressDialog(getContext());
+        currentProgressDialog.setMessage("Comparaison des photos en cours...");
+        currentProgressDialog.setCancelable(false);
+        currentProgressDialog.show();
+
         FaceMatchingService faceMatchingService = new FaceMatchingService(requireContext());
 
-        faceMatchingService.createProbeFace(selfie, probeFaceId -> {
-            if (probeFaceId == null) {
-                handleRfidComparisonError("Échec création face sonde", progressDialog);
-                return;
-            }
-            faceMatchingService.createReferenceFace(rfidPortrait, referenceFaceId -> {
-                if (referenceFaceId == null) {
-                    handleRfidComparisonError("Échec création face référence", progressDialog);
+        faceMatchingService.createProbeFace(selfie, new FaceMatchingService.FaceCreationCallback() {
+            @Override
+            public void onFaceCreated(String probeFaceId) {
+                if (probeFaceId == null) {
+                    handleRfidComparisonError("Échec création face sonde");
                     return;
                 }
-                faceMatchingService.matchFaces(probeFaceId, referenceFaceId, new FaceMatchingService.MatchCallback() {
+                faceMatchingService.createReferenceFace(rfidPortrait, new FaceMatchingService.FaceCreationCallback() {
                     @Override
-                    public void onSuccess(double score) {
-                        CustomerDataActivity.rfidSimilarityScore = (int) (score * 100);
-                        updateRfidSimilarityUI(CustomerDataActivity.rfidSimilarityScore);
-                        progressDialog.dismiss();
+                    public void onFaceCreated(String referenceFaceId) {
+                        if (referenceFaceId == null) {
+                            handleRfidComparisonError("Échec création face référence");
+                            return;
+                        }
+                        faceMatchingService.matchFaces(probeFaceId, referenceFaceId, new FaceMatchingService.MatchCallback() {
+                            @Override
+                            public void onSuccess(double score) {
+                                CustomerDataActivity.rfidSimilarityScore = (int) (score * 100);
+                                updateRfidSimilarityUI(CustomerDataActivity.rfidSimilarityScore);
+                                dismissCurrentProgressDialog();
+                            }
+                            @Override
+                            public void onError(String error) {
+                                handleRfidComparisonError("Erreur comparaison RFID: " + error);
+                            }
+                        });
                     }
+
                     @Override
                     public void onError(String error) {
-                        handleRfidComparisonError("Erreur comparaison RFID: " + error, progressDialog);
+                        handleRfidComparisonError("Échec création face référence: " + error);
                     }
                 });
-            });
+            }
+
+            @Override
+            public void onError(String error) {
+                handleRfidComparisonError("Échec création face sonde: " + error);
+            }
         });
     }
+    private void dismissCurrentProgressDialog() {
+        if (currentProgressDialog != null && currentProgressDialog.isShowing()) {
+            currentProgressDialog.dismiss();
+        }
+        currentProgressDialog = null;
+    }
 
-    private void handleRfidComparisonError(String message, ProgressDialog dialog) {
-        if (dialog != null && dialog.isShowing()) dialog.dismiss();
+    private void handleRfidComparisonError(String message) {
+        dismissCurrentProgressDialog();
         Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
         Log.e(TAG, message);
     }
@@ -241,10 +239,11 @@ public class Page3Fragment extends Fragment {
             rfidSimilarityScoreTextView.setText("Similarité: " + percentage + "%");
             int bgColor;
             int textColor;
+
             if (percentage == 100) {
                 bgColor = ContextCompat.getColor(requireContext(), R.color.score_perfect_bg);
                 textColor = ContextCompat.getColor(requireContext(), R.color.score_perfect_text);
-            } else if (percentage >= 80) { // Condition ajustée
+            } else if (percentage >= 80) {
                 bgColor = ContextCompat.getColor(requireContext(), R.color.score_high_bg);
                 textColor = ContextCompat.getColor(requireContext(), R.color.score_high_text);
             } else if (percentage >= 50) {
@@ -254,60 +253,77 @@ public class Page3Fragment extends Fragment {
                 bgColor = ContextCompat.getColor(requireContext(), R.color.score_low_bg);
                 textColor = ContextCompat.getColor(requireContext(), R.color.score_low_text);
             }
-            if (scoreContainerRfidSelfie.getBackground() instanceof GradientDrawable) {
-                ((GradientDrawable) scoreContainerRfidSelfie.getBackground()).setColor(bgColor);
-            } else {
-                scoreContainerRfidSelfie.setBackgroundColor(bgColor);
-            }
-            rfidSimilarityScoreTextView.setTextColor(textColor);
+
+            setScoreContainerStyle(scoreContainerRfidSelfie, bgColor, rfidSimilarityScoreTextView, textColor);
         }
     }
 
-    /**
-     * Cette méthode est appelée par l'activité principale (CustomerDataActivity)
-     * après qu'un nouveau selfie ait été pris et passé à ce fragment.
-     */
+    private void setScoreContainerStyle(View container, int bgColor, TextView textView, int textColor) {
+        if (container.getBackground() instanceof GradientDrawable) {
+            ((GradientDrawable) container.getBackground()).setColor(bgColor);
+        } else {
+            container.setBackgroundColor(bgColor);
+        }
+        textView.setTextColor(textColor);
+    }
+
     public void refreshSelfieAndUpload(Bitmap selfie) {
         if (selfie != null) {
             CustomerDataActivity.similarityScore = null;
             CustomerDataActivity.rfidSimilarityScore = null;
-            CustomerDataActivity.selfieBitmap = selfie; // Mettre à jour le bitmap statique
-            updateSelfieUI(); // Met à jour l'UI du selfie et du bouton
-            uploadSelfieToServer(selfie); // Relance l'upload et le calcul des scores
+            CustomerDataActivity.selfieBitmap = selfie;
+            updateSelfieUI();
+            uploadSelfieToServer(selfie);
         }
     }
-
     private void uploadSelfieToServer(Bitmap bitmap) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
-        byte[] byteArray = byteArrayOutputStream.toByteArray();
-        String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
-        try {
+        dismissCurrentProgressDialog(); // S'assurer qu'aucun précédent n'est actif
+        currentProgressDialog = new ProgressDialog(getContext());
+        currentProgressDialog.setMessage("Upload du selfie en cours...");
+        currentProgressDialog.setCancelable(false);
+        currentProgressDialog.show();
+
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, byteArrayOutputStream);
+            byte[] byteArray = byteArrayOutputStream.toByteArray();
+            String encodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP);
+
             JSONObject requestBody = new JSONObject();
             JSONObject imageObject = new JSONObject();
             imageObject.put("data", encodedImage);
             requestBody.put("image", imageObject);
-            String customerId = ((CustomerDataActivity) requireActivity()).getCustomerId();
+
             new CustomerService().provideCustomerSelfie(customerId, requestBody, new CustomerService.ApiCallback() {
                 @Override
                 public void onSuccess(JSONObject response) {
-                    requireActivity().runOnUiThread(() -> {
-                        Log.d(TAG, "Selfie uploaded successfully");
-                        Toast.makeText(requireContext(), "Selfie uploaded successfully", Toast.LENGTH_SHORT).show();
-                        checkSimilarityScore(customerId);
-                    });
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            dismissCurrentProgressDialog(); // Fermeture du progress
+                            Log.d(TAG, "Selfie uploaded successfully");
+                            Toast.makeText(requireContext(), "Selfie uploaded successfully", Toast.LENGTH_SHORT).show();
+                            checkSimilarityScore(customerId);
+                        });
+                    }
                 }
+
                 @Override
                 public void onFailure(Exception e) {
-                    /*requireActivity().runOnUiThread(() ->
-                           Toast.makeText(requireContext(), "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                    );*/
-                    Log.e(TAG, "Upload failed", e);
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            dismissCurrentProgressDialog(); // Fermeture même en cas d'erreur
+                            Toast.makeText(requireContext(), "Erreur lors de l'upload du selfie: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "Upload failed", e);
+                        });
+                    }
                 }
             });
         } catch (JSONException e) {
+            dismissCurrentProgressDialog();
             e.printStackTrace();
-            Toast.makeText(requireContext(), "Error creating request", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Erreur lors de la création de la requête JSON", Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            dismissCurrentProgressDialog();
+            Log.e(TAG, "Error closing stream", e);
         }
     }
 
@@ -320,12 +336,12 @@ public class Page3Fragment extends Fragment {
                         double score = response.getDouble("similarityScore");
                         CustomerDataActivity.similarityScore = score;
                         updateSimilarityScoreText(score);
-                        if (rfidBitmap != null && CustomerDataActivity.selfieBitmap != null) { // Vérifier si selfieBitmap est non-null ici
+                        if (rfidBitmap != null && CustomerDataActivity.selfieBitmap != null) {
                             compareRfidAndSelfie(CustomerDataActivity.selfieBitmap, rfidBitmap);
                         }
                     } catch (JSONException e) {
                         similarityScoreTextView.setText("Score unavailable");
-                        e.printStackTrace();
+                        Log.e(TAG, "Error parsing similarity score", e);
                     }
                 });
             }
@@ -343,8 +359,10 @@ public class Page3Fragment extends Fragment {
         if (similarityScoreTextView != null && scoreContainerPortraitSelfie != null) {
             String scoreText = String.format("Similarité: %.1f%%", score * 100);
             similarityScoreTextView.setText(scoreText);
+
             int bgColor;
             int textColor;
+
             if (percentage >= 70 || percentage == 100) {
                 bgColor = ContextCompat.getColor(requireContext(), R.color.score_perfect_bg);
                 textColor = ContextCompat.getColor(requireContext(), R.color.score_perfect_text);
@@ -355,12 +373,8 @@ public class Page3Fragment extends Fragment {
                 bgColor = ContextCompat.getColor(requireContext(), R.color.score_low_bg);
                 textColor = ContextCompat.getColor(requireContext(), R.color.score_low_text);
             }
-            if (scoreContainerPortraitSelfie.getBackground() instanceof GradientDrawable) {
-                ((GradientDrawable) scoreContainerPortraitSelfie.getBackground()).setColor(bgColor);
-            } else {
-                scoreContainerPortraitSelfie.setBackgroundColor(bgColor);
-            }
-            similarityScoreTextView.setTextColor(textColor);
+
+            setScoreContainerStyle(scoreContainerPortraitSelfie, bgColor, similarityScoreTextView, textColor);
         }
     }
 
@@ -370,35 +384,27 @@ public class Page3Fragment extends Fragment {
             selfieImageView2.setImageBitmap(CustomerDataActivity.selfieBitmap);
             selfieImageView2.setVisibility(View.VISIBLE);
             selfieImageView.setVisibility(View.VISIBLE);
-            selfieCameraButtonContainer.setVisibility(View.GONE); // Cache le bouton caméra
-            selfieCameraButtonContainer2.setVisibility(View.GONE); // Cache le bouton caméra
-
+            selfieCameraButtonContainer.setVisibility(View.GONE);
+            selfieCameraButtonContainer2.setVisibility(View.GONE);
         } else {
             selfieImageView.setImageDrawable(null);
             selfieImageView2.setImageDrawable(null);
             selfieImageView2.setVisibility(View.GONE);
-            selfieCameraButtonContainer.setVisibility(View.VISIBLE); // Affiche le bouton caméra
-            selfieCameraButtonContainer2.setVisibility(View.VISIBLE); // Affiche le bouton caméra
-
+            selfieCameraButtonContainer.setVisibility(View.VISIBLE);
+            selfieCameraButtonContainer2.setVisibility(View.VISIBLE);
         }
     }
 
-    /**
-     * Gère le résultat de l'activité de capture de selfie lancée par ce fragment.
-     */
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == SELFIE_CAPTURE_REQUEST_CODE && resultCode == Activity.RESULT_OK && data != null) { // Utilisation de Activity.RESULT_OK
+        if (requestCode == SELFIE_CAPTURE_REQUEST_CODE && resultCode == Activity.RESULT_OK && data != null) {
             String imagePath = data.getStringExtra("imagePath");
             if (imagePath != null) {
-                // Décode l'image et l'applique
-                Bitmap selfie = handleRotation(imagePath);
+                Bitmap selfie = ImageUtils.handleRotation(imagePath);
                 if (selfie != null) {
-                    // Mettre à jour le bitmap statique dans l'activité pour qu'il soit disponible globalement
                     CustomerDataActivity.selfieBitmap = selfie;
-                    // Rafraîchir l'UI du fragment et relancer l'upload/comparaison
                     refreshSelfieAndUpload(selfie);
                 } else {
                     Toast.makeText(getContext(), "Échec du décodage de l'image du selfie.", Toast.LENGTH_SHORT).show();
@@ -409,54 +415,10 @@ public class Page3Fragment extends Fragment {
         }
     }
 
-    /**
-     * Cette méthode pour gérer la rotation d'image.
-     * Idéalement, elle devrait être déplacée dans une classe utilitaire ou CustomerDataActivity
-     * si elle est partagée, mais pour la simplicité, elle est ici.
-     */
-    private Bitmap handleRotation(String imagePath) {
-        Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
-        if (bitmap == null) return null;
-
-        try {
-            // Utiliser ExifInterface de androidx.exifinterface.media.ExifInterface si disponible
-            // Sinon, l'importer manuellement ou l'ajouter aux dépendances
-            // Pour l'exemple, nous allons supposer qu'il est disponible ou que vous le gérerez.
-            // Si vous n'avez pas cette dépendance, vous devrez l'ajouter:
-            // implementation 'androidx.exifinterface:exifinterface:1.3.3' (dernière version)
-            ExifInterface exif = new ExifInterface(imagePath); // Utilisation de l'import direct
-            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
-                    ExifInterface.ORIENTATION_UNDEFINED);
-
-            android.graphics.Matrix matrix = new android.graphics.Matrix();
-            switch (orientation) {
-                case ExifInterface.ORIENTATION_ROTATE_90:
-                    matrix.postRotate(90);
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_180:
-                    matrix.postRotate(180);
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_270:
-                    matrix.postRotate(270);
-                    break;
-                default:
-                    return bitmap; // pas de rotation nécessaire
-            }
-
-            return Bitmap.createBitmap(bitmap, 0, 0,
-                    bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            Log.e(TAG, "Erreur lors de la gestion de la rotation de l'image: " + e.getMessage());
-        }
-        return bitmap;
-    }
-
     @Override
     public void onResume() {
         super.onResume();
-        updateSelfieUI(); // Appel de la méthode centralisée pour la mise à jour de l'UI du selfie et du bouton
+        updateSelfieUI();
 
         if (CustomerDataActivity.portraitBitmap != null) {
             portraitImageView.setImageBitmap(CustomerDataActivity.portraitBitmap);
@@ -467,33 +429,27 @@ public class Page3Fragment extends Fragment {
         if (CustomerDataActivity.rfidSimilarityScore != null) {
             updateRfidSimilarityUI(CustomerDataActivity.rfidSimilarityScore);
         }
-       /* // Relancer la comparaison RFID si un selfie est présent, RFID bitmap est présent, et le score RFID est null
-        if (CustomerDataActivity.selfieBitmap != null && rfidBitmap != null && CustomerDataActivity.rfidSimilarityScore == null) {
-            compareRfidAndSelfie(CustomerDataActivity.selfieBitmap, rfidBitmap);
-        }
-
-        // Vérifier et potentiellement relancer la comparaison Portrait vs Selfie si nécessaire
-        if (CustomerDataActivity.selfieBitmap != null && CustomerDataActivity.portraitBitmap != null && CustomerDataActivity.similarityScore == null) {
-            checkSimilarityScore(customerId);
-        }*/
-
         if (rfidComparisonCard != null) {
             rfidComparisonCard.setVisibility(rfidBitmap != null ? View.VISIBLE : View.GONE);
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        dismissCurrentProgressDialog();
     }
 
     public JSONObject getPdfData() {
         JSONObject data = new JSONObject();
         try {
             if (CustomerDataActivity.similarityScore != null) {
-                // Le score est un double entre 0.0 et 1.0, le convertir en pourcentage pour l'affichage
                 data.put("portraitSelfieScore", String.format("%.1f%%", CustomerDataActivity.similarityScore * 100));
             } else {
                 data.put("portraitSelfieScore", "N/A");
             }
 
             if (CustomerDataActivity.rfidSimilarityScore != null) {
-                // Le score RFID est déjà un entier en pourcentage
                 data.put("rfidSelfieScore", CustomerDataActivity.rfidSimilarityScore + "%");
             } else {
                 data.put("rfidSelfieScore", "N/A");

@@ -1,13 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#CC000000">
 
-    <ImageView
+    <com.jsibbold.zoomage.ZoomageView
         android:id="@+id/dialogImageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:src="@drawable/ic_launcher_background"
         android:scaleType="fitCenter"
+        app:zoomage_zoomable="true"
+        app:zoomage_translatable="true"
+        app:zoomage_autoCenter="true"
+        app:zoomage_animateOnReset="true"
+        app:zoomage_maxScale="8"
+        app:zoomage_minScale="0.6"
         android:contentDescription="Image plein écran" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:orientation="horizontal"
+        android:layout_margin="8dp">
+
+        <ImageButton
+            android:id="@+id/saveButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_download"
+            android:background="?attr/selectableItemBackgroundBorderless"/>
+        <ImageButton
+            android:id="@+id/closeButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/outline_close_small_24"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginBottom="8dp"
+            app:tint="@android:color/white" />
+    </LinearLayout>
+
 </FrameLayout>

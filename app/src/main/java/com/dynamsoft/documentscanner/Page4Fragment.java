@@ -28,6 +28,7 @@ import androidx.fragment.app.Fragment;
 
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.FaceMatchingService;
+import com.jsibbold.zoomage.ZoomageView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -50,7 +51,7 @@ public class Page4Fragment extends Fragment {
     private static final String KEY_FACE = "face_bitmap";
 
     // Variables membres
-    private ImageView faceImageView, docPortrait;
+    private ZoomageView faceImageView, docPortrait;
     private Bitmap cachedPortraitBitmap, faceImageBitmap;
     private TextView similarityScoreTextView, nameTextView, surnameTextView,
             genderTextView, birthDateTextView, expiryDateTextView,
@@ -128,12 +129,14 @@ public class Page4Fragment extends Fragment {
         }
         faceImageView.setOnClickListener(v -> {
             Bitmap bitmap = ((BitmapDrawable) faceImageView.getDrawable()).getBitmap();
-            showImageFullscreen(bitmap);
-        });
+            FullscreenImageDialog.show(requireContext(), bitmap, () -> {
+                Log.d("FullscreenDialog", "face Image saved callback");
+            });          });
         docPortrait.setOnClickListener(v -> {
             Bitmap bitmap = ((BitmapDrawable) docPortrait.getDrawable()).getBitmap();
-            showImageFullscreen(bitmap);
-        });
+            FullscreenImageDialog.show(requireContext(), bitmap, () -> {
+                Log.d("FullscreenDialog", "doc portrait saved callback");
+            });          });
         return view;
     }
 
@@ -421,41 +424,57 @@ public class Page4Fragment extends Fragment {
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        faceMatchingService.createProbeFace(faceImageBitmap, probeFaceId -> {
-            if (!isAdded()) {
-                dismissProgressDialog();
-                return;
-            }
-
-            if (probeFaceId == null) {
-                handleComparisonError("Échec de la création de la face sonde");
-                return;
-            }
-
-            faceMatchingService.createReferenceFace(cachedPortraitBitmap, referenceFaceId -> {
+        faceMatchingService.createProbeFace(faceImageBitmap, new FaceMatchingService.FaceCreationCallback() {
+            @Override
+            public void onFaceCreated(String probeFaceId) {
                 if (!isAdded()) {
                     dismissProgressDialog();
                     return;
                 }
 
-                if (referenceFaceId == null) {
-                    handleComparisonError("Échec de la création de la face référence");
+                if (probeFaceId == null) {
+                    handleComparisonError("Échec de la création de la face sonde");
                     return;
                 }
 
-                faceMatchingService.matchFaces(probeFaceId, referenceFaceId, new FaceMatchingService.MatchCallback() {
+                faceMatchingService.createReferenceFace(cachedPortraitBitmap, new FaceMatchingService.FaceCreationCallback() {
                     @Override
-                    public void onSuccess(double score) {
+                    public void onFaceCreated(String referenceFaceId) {
                         if (!isAdded()) {
                             dismissProgressDialog();
                             return;
                         }
 
-                        comparisonInProgress = false;
-                        comparisonDone = true;
-                        similarityScore = (int) (score * 100);
-                        updateSimilarityUI(similarityScore);
-                        dismissProgressDialog();
+                        if (referenceFaceId == null) {
+                            handleComparisonError("Échec de la création de la face référence");
+                            return;
+                        }
+
+                        faceMatchingService.matchFaces(probeFaceId, referenceFaceId, new FaceMatchingService.MatchCallback() {
+                            @Override
+                            public void onSuccess(double score) {
+                                if (!isAdded()) {
+                                    dismissProgressDialog();
+                                    return;
+                                }
+
+                                comparisonInProgress = false;
+                                comparisonDone = true;
+                                similarityScore = (int) (score * 100);
+                                updateSimilarityUI(similarityScore);
+                                dismissProgressDialog();
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                if (!isAdded()) {
+                                    dismissProgressDialog();
+                                    return;
+                                }
+
+                                handleComparisonError("Erreur lors de la comparaison: " + error);
+                            }
+                        });
                     }
 
                     @Override
@@ -464,11 +483,19 @@ public class Page4Fragment extends Fragment {
                             dismissProgressDialog();
                             return;
                         }
-
-                        handleComparisonError("Erreur lors de la comparaison: " + error);
+                        handleComparisonError("Échec création référence: " + error);
                     }
                 });
-            });
+            }
+
+            @Override
+            public void onError(String error) {
+                if (!isAdded()) {
+                    dismissProgressDialog();
+                    return;
+                }
+                handleComparisonError("Échec création sonde: " + error);
+            }
         });
     }
 

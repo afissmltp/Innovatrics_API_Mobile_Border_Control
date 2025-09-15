@@ -442,7 +442,7 @@ public class ReadNFCActivity extends AppCompatActivity {
         intent.putExtra("docType", docType);
         intent.putExtra("issuerAuthority", issuerAuthority);
 
-        intent.putExtra("openFragmentIndex", 3);
+        intent.putExtra("openFragmentIndex", 4);
         startActivity(intent);
         finish();
     }

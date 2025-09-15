@@ -166,13 +166,19 @@
             android:gravity="center"
             android:layout_marginTop="16dp">
 
-            <ImageView
+            <com.jsibbold.zoomage.ZoomageView
                 android:id="@+id/documentImageViewFragment"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:adjustViewBounds="true"
                 android:scaleType="fitCenter"
-                tools:srcCompat="@tools:sample/backgrounds/scenic" />
+                tools:srcCompat="@tools:sample/backgrounds/scenic"
+                app:zoomage_zoomable="true"
+                app:zoomage_translatable="true"
+                app:zoomage_autoCenter="true"
+                app:zoomage_animateOnReset="true"
+                app:zoomage_maxScale="8"
+                app:zoomage_minScale="0.6"/>
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

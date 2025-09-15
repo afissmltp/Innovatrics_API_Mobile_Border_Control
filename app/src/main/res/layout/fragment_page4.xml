@@ -2,7 +2,9 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -32,11 +34,17 @@
                     android:textSize="14sp"
                     android:layout_marginBottom="8dp"/>
 
-                <ImageView
+                <com.jsibbold.zoomage.ZoomageView
                     android:id="@+id/faceImageView"
                     android:layout_width="150dp"
                     android:layout_height="200dp"
-                    android:scaleType="fitCenter"/>
+                    android:scaleType="fitCenter"
+                    app:zoomage_zoomable="true"
+                    app:zoomage_translatable="true"
+                    app:zoomage_autoCenter="true"
+                    app:zoomage_animateOnReset="true"
+                    app:zoomage_maxScale="8"
+                    app:zoomage_minScale="0.6"/>
             </LinearLayout>
 
             <!-- Photo Document -->
@@ -50,15 +58,21 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Photo document"
+                    android:text="Portrait document"
                     android:textSize="14sp"
                     android:layout_marginBottom="8dp"/>
 
-                <ImageView
+                <com.jsibbold.zoomage.ZoomageView
                     android:id="@+id/docPortrait"
                     android:layout_width="150dp"
                     android:layout_height="200dp"
-                    android:scaleType="fitCenter"/>
+                    android:scaleType="fitCenter"
+                    app:zoomage_zoomable="true"
+                    app:zoomage_translatable="true"
+                    app:zoomage_autoCenter="true"
+                    app:zoomage_animateOnReset="true"
+                    app:zoomage_maxScale="8"
+                    app:zoomage_minScale="0.6"/>
             </LinearLayout>
         </LinearLayout>
 

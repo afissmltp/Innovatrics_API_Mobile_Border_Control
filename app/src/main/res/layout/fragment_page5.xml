@@ -4,32 +4,24 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#F5F5F5">
-
-    <include
-        android:id="@+id/simpleToolbar"
-        layout="@layout/toolbar_custom"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+    android:layout_height="match_parent">
 
     <ScrollView
         android:id="@+id/scrollContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_constraintTop_toBottomOf="@id/simpleToolbar"
-        app:layout_constraintBottom_toTopOf="@+id/topButtonBar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:gravity="center">
+
             <com.jsibbold.zoomage.ZoomageView
                 android:id="@+id/documentImageView"
                 android:layout_width="match_parent"
@@ -42,6 +34,12 @@
                 app:zoomage_animateOnReset="true"
                 app:zoomage_maxScale="8"
                 app:zoomage_minScale="0.6"/>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/qualityPanel"
                 android:layout_width="match_parent"
@@ -196,6 +194,7 @@
                             android:textSize="14sp"
                             android:textColor="@android:color/black"/>
                     </LinearLayout>
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -228,41 +227,13 @@
                     </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
         </LinearLayout>
     </ScrollView>
-
-    <LinearLayout
-        android:id="@+id/topButtonBar"
-        android:layout_width="0dp"
-        android:layout_height="60dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:background="@android:color/white"
-        android:elevation="4dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <Button
-            android:id="@+id/readNfcBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:drawableLeft="@drawable/nfc2"
-            android:text="Read NFC" />
-
-        <Button
-            android:id="@+id/readDocBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Détails"
-            android:drawableLeft="@drawable/add_icon"
-            android:layout_marginStart="8dp"/>
-    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -275,4 +246,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

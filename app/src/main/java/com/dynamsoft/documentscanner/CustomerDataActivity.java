@@ -20,6 +20,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -36,6 +37,8 @@ import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerSer
 import com.dynamsoft.documentscanner.model.SessionData;
 import com.dynamsoft.documentscanner.ui.ReadNFCActivity;
 import com.google.android.material.tabs.TabLayout;
+import com.jsibbold.zoomage.ZoomageView;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -53,7 +56,7 @@ public class CustomerDataActivity extends AppCompatActivity {
     private static final String TAG = "CustomerDataActivity";
     private TextView tvName, tvGender, tvSurname, tvAge;
     private CustomerService customerService;
-    private ImageView imageView;
+    private ZoomageView imageView;
     private String customerId;
     private JSONObject customerData;
     public static Bitmap portraitBitmap = null;
@@ -63,14 +66,15 @@ public class CustomerDataActivity extends AppCompatActivity {
     public static Integer rfidSimilarityScore = null;
     public static Bitmap rfidBitmap;
     private final String[] PAGE_TITLES = new String[]{
-            "INFO",
+            "Info",
+            "Authenticité",
             "Images",
             "Check",
-            "DONNÉES RFID"
+            "RFID"
     };
     private Fragment[] PAGES;
     private ViewPager mViewPager;
-    private String expirationStatusText, mrzStatusText, printCopyStatusText, textConsistencyStatusText, ocrConfidenceStatusText, screenshotStatusText, genderComparisonStatus, ageComparisonStatus;
+    private String expirationStatusText, mrzStatusText, printCopyStatusText, textConsistencyStatusText, ocrConfidenceStatusText, screenshotStatusText, genderComparisonStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,14 +86,6 @@ public class CustomerDataActivity extends AppCompatActivity {
         initializeViews();
 
         customerId = getIntent().getStringExtra("customerId");
-       /* expirationStatusText = getIntent().getStringExtra("expirationStatus");
-        mrzStatusText = getIntent().getStringExtra("mrzStatus");
-        printCopyStatusText = getIntent().getStringExtra("printCopyStatus");
-        textConsistencyStatusText = getIntent().getStringExtra("textConsistencyStatus");
-        ocrConfidenceStatusText = getIntent().getStringExtra("ocrConfidenceStatus");
-        screenshotStatusText = getIntent().getStringExtra("screenshotStatus");
-        ageComparisonStatus = getIntent().getStringExtra("ageComparison");
-        genderComparisonStatus = getIntent().getStringExtra("genderComparison");*/
 
         SessionData data = SessionData.getInstance();
         expirationStatusText = data.expirationStatus;
@@ -98,7 +94,6 @@ public class CustomerDataActivity extends AppCompatActivity {
         textConsistencyStatusText = data.textConsistencyStatus;
         ocrConfidenceStatusText = data.ocrConfidenceStatus;
         screenshotStatusText = data.screenshotStatus;
-        ageComparisonStatus = data.ageComparison;
         genderComparisonStatus = data.genderComparison;
 
         if (customerId != null && !customerId.isEmpty()) {
@@ -116,17 +111,17 @@ public class CustomerDataActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         TextView toolbarTitle = findViewById(R.id.toolbarTitle);
-        toolbarTitle.setText("Contrôle identité");
+        toolbarTitle.setText("Contrôle d'identité");
 
-        ImageButton homebtn = findViewById(R.id.homeButton);
-        homebtn.setOnClickListener(v -> {
-            Intent intent = new Intent(this, HomeActivity.class);
+        ImageButton homeButton = findViewById(R.id.homeButton);
+        homeButton.setOnClickListener(v -> {
+            Page1Fragment.clearDocumentImageCache();
+            Page2Fragment.clearDocumentImageCache();
             Page3Fragment.clearSelfieAndScores();
+
+            Intent intent = new Intent(this, HomeActivity.class);
             startActivity(intent);
         });
-
-        ImageButton docScanButton = findViewById(R.id.docScanButton);
-        docScanButton.setOnClickListener(v -> onScanButtonClicked());
 
         // Initialisation des fragments
         byte[] faceImageBytes = getIntent().getByteArrayExtra("faceImage");
@@ -165,9 +160,10 @@ public class CustomerDataActivity extends AppCompatActivity {
 
         Page2Fragment page2Fragment = Page2Fragment.newInstance(customerId, faceImageBytes);
         Page3Fragment page3Fragment = Page3Fragment.newInstance(customerId, faceImageBytes);
-
+        Page5Fragment page5Fragment =  Page5Fragment.newInstance(customerId);
         PAGES = new Fragment[]{
-                new Page1Fragment(),
+                Page1Fragment.newInstance(new JSONObject(), customerId),
+                page5Fragment,
                 page2Fragment,
                 page3Fragment,
                 page4Fragment
@@ -178,16 +174,17 @@ public class CustomerDataActivity extends AppCompatActivity {
         int fragmentIndex = getIntent().getIntExtra("openFragmentIndex", 0);
         mViewPager.setCurrentItem(fragmentIndex);
 
-        findViewById(R.id.readNfcBtn).setOnClickListener(v -> {
-            Intent intent = new Intent(this, ReadNFCActivity.class);
-            intent.putExtra("customerId", customerId);
-            startActivityForResult(intent, 1001);
-        });
 
         findViewById(R.id.selfieBtn).setOnClickListener(v -> {
             Intent intent = new Intent(this, SelfieCameraActivity.class);
             intent.putExtra("customerId", customerId);
             intent.putExtra("parentActivity", "CustomerDataActivity");
+            startActivityForResult(intent, 1001);
+        });
+
+        findViewById(R.id.readNfcBtn).setOnClickListener(v -> {
+            Intent intent = new Intent(this, ReadNFCActivity.class);
+            intent.putExtra("customerId", customerId);
             startActivityForResult(intent, 1001);
         });
 
@@ -198,7 +195,10 @@ public class CustomerDataActivity extends AppCompatActivity {
 
         imageView.setOnClickListener(v -> {
             Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
-            showImageFullscreen(bitmap);
+            FullscreenImageDialog.show(this, bitmap, () -> {
+                // Optionnel : action après la sauvegarde
+                Log.d("FullscreenDialog", "Image saved callback");
+            });
         });
 
         ImageButton btnGeneratePdf = findViewById(R.id.btnGeneratePdf);
@@ -239,7 +239,7 @@ public class CustomerDataActivity extends AppCompatActivity {
 
             } else {
                 Log.w("PDF_FLOW", "Données client pas toutes prêtes");
-                Toast.makeText(this, "Les données client ne sont pas encore toutes prêtes.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Les données du passager ne sont pas encore toutes prêtes.", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -286,21 +286,9 @@ public class CustomerDataActivity extends AppCompatActivity {
             Toast.makeText(this, "Erreur lors du partage: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
-    private void onScanButtonClicked() {
-        // Clear the cache BEFORE launching the new scan activity.
-        // This ensures Page1Fragment will perform a new API call for the updated image.
-        Page1Fragment.clearDocumentImageCache();
-        Page2Fragment.clearDocumentImageCache();
-        Page3Fragment.clearSelfieAndScores();
-
-        Intent intent = new Intent(this, CameraActivity2.class);
-        intent.putExtra("customerId", customerId);
-        startActivity(intent);
-    }
-
     public void showPage3Fragment() {
         if (mViewPager != null) {
-            mViewPager.setCurrentItem(2, true);
+            mViewPager.setCurrentItem(3, true);
         }
     }
 
@@ -312,6 +300,7 @@ public class CustomerDataActivity extends AppCompatActivity {
         mViewPager = findViewById(R.id.viewpager);
         mViewPager.setAdapter(new MyPagerAdapter(getSupportFragmentManager(), PAGES, PAGE_TITLES));
 
+        mViewPager.setOffscreenPageLimit(PAGES.length);
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         tabLayout.setupWithViewPager(mViewPager);
 
@@ -333,15 +322,6 @@ public class CustomerDataActivity extends AppCompatActivity {
         tvAge = findViewById(R.id.tvAge);
     }
 
-    private void showImageFullscreen(Bitmap bitmap) {
-        Dialog dialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-        dialog.setContentView(R.layout.dialog_fullscreen_image);
-        ImageView imageView = dialog.findViewById(R.id.dialogImageView);
-        imageView.setImageBitmap(bitmap);
-        imageView.setOnClickListener(v -> dialog.dismiss());
-        dialog.show();
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -353,7 +333,7 @@ public class CustomerDataActivity extends AppCompatActivity {
                 if (selfie != null) {
                     CustomerDataActivity.selfieBitmap = selfie;
                     showPage3Fragment();
-                    Fragment fragment = PAGES[2];
+                    Fragment fragment = PAGES[3];
                     if (fragment instanceof Page3Fragment) {
                         ((Page3Fragment) fragment).refreshSelfieAndUpload(selfie);
                     }
@@ -418,13 +398,9 @@ public class CustomerDataActivity extends AppCompatActivity {
     }
 
     private void updateFragmentData(JSONObject response) {
-        Fragment fragment = getSupportFragmentManager().findFragmentByTag(
-                "android:switcher:" + R.id.viewpager + ":0");
+        Fragment fragment = PAGES[0];
         if (fragment instanceof Page1Fragment) {
             ((Page1Fragment) fragment).updateCustomerData(response);
-        }
-        if (mViewPager.getCurrentItem() == 0) {
-            mViewPager.getAdapter().notifyDataSetChanged();
         }
     }
 
@@ -454,6 +430,48 @@ public class CustomerDataActivity extends AppCompatActivity {
         }
     }
 
+    public class MyPagerAdapter extends FragmentStatePagerAdapter {
+        private final Fragment[] fragments;
+        private final String[] titles;
+        private JSONObject lastCustomerDataSentToPage1 = null;
+
+        public MyPagerAdapter(FragmentManager fm, Fragment[] fragments, String[] titles) {
+            super(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
+            this.fragments = fragments;
+            this.titles = titles;
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            if (position == 0 && lastCustomerDataSentToPage1 != null) {
+                return Page1Fragment.newInstance(lastCustomerDataSentToPage1, ((CustomerDataActivity) fragments[0].getActivity()).getCustomerId());
+            }
+            if (position == 1) {
+                return fragments[1];
+            }
+            if (position == 2) {
+                byte[] faceImageBytes = getIntent().getByteArrayExtra("faceImage");
+                return Page2Fragment.newInstance(customerId, faceImageBytes);
+            }
+            return fragments[position];
+        }
+
+        @Override
+        public int getCount() {
+            return fragments.length;
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return titles[position];
+        }
+
+        @Override
+        public int getItemPosition(Object object) {
+            return POSITION_UNCHANGED;
+        }
+
+    }
     private void loadDocumentPortrait() {
         try {
             Log.d(TAG, "Attempting to load document portrait for customerId: " + customerId);
@@ -497,45 +515,20 @@ public class CustomerDataActivity extends AppCompatActivity {
             Toast.makeText(this, "Error loading document portrait: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
-
-    public class MyPagerAdapter extends FragmentStatePagerAdapter {
-        private final Fragment[] fragments;
-        private final String[] titles;
-
-        public MyPagerAdapter(FragmentManager fm, Fragment[] fragments, String[] titles) {
-            super(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
-            this.fragments = fragments;
-            this.titles = titles;
+    @Override
+    protected void onDestroy() {
+        if (selfieBitmap != null && !selfieBitmap.isRecycled()) {
+            selfieBitmap.recycle();
+            selfieBitmap = null;
         }
 
-        @Override
-        public Fragment getItem(int position) {
-            if (position == 0 && customerData != null) {
-                return Page1Fragment.newInstance(customerData, customerId);
-            }
-            if (position == 1) {
-                byte[] faceImageBytes = getIntent().getByteArrayExtra("faceImage");
-                return Page2Fragment.newInstance(customerId, faceImageBytes);
-            }
-            return fragments[position];
-        }
+        similarityScore = null;
+        rfidSimilarityScore = null;
 
-        @Override
-        public int getCount() {
-            return fragments.length;
-        }
+        SessionData.clear(); // Les données sont supprimées quand l'activité est détruite
 
-        @Override
-        public CharSequence getPageTitle(int position) {
-            return titles[position];
-        }
-
-        @Override
-        public int getItemPosition(Object object) {
-            return POSITION_NONE;
-        }
+        super.onDestroy();
     }
-
     private int calculateAge(String dobString) {
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -553,22 +546,6 @@ public class CustomerDataActivity extends AppCompatActivity {
             return -1;
         }
     }
-
-    @Override
-    protected void onDestroy() {
-        if (selfieBitmap != null && !selfieBitmap.isRecycled()) {
-            selfieBitmap.recycle();
-            selfieBitmap = null;
-        }
-
-        similarityScore = null;
-        rfidSimilarityScore = null;
-
-        SessionData.clear(); // Les données sont supprimées quand l'activité est détruite
-
-        super.onDestroy();
-    }
-
     private File generateAndExportPdf(JSONObject apiResponse) {
         File file = null;
 
@@ -597,25 +574,27 @@ public class CustomerDataActivity extends AppCompatActivity {
 
             PdfDocument pdfDocument = new PdfDocument();
 
-            // Couleurs modernes
-            int primaryColor = Color.rgb(59, 89, 152);
-            int secondaryColor = Color.rgb(120, 140, 180);
-            int textColor = Color.rgb(50, 50, 50);
-            int lightGray = Color.rgb(240, 240, 240);
-            int successColor = Color.rgb(46, 125, 50);
-            int warningColor = Color.rgb(237, 108, 0);
-            int errorColor = Color.rgb(198, 40, 40);
+            // Palette de couleurs cohérente
+            int primaryColor = Color.rgb(59, 89, 152);     // Bleu foncé
+            int secondaryColor = Color.rgb(120, 140, 180); // Bleu moyen
+            int textColor = Color.rgb(50, 50, 50);         // Texte principal
+            int lightGray = Color.rgb(245, 245, 245);      // Fond gris très clair
+            int successColor = Color.rgb(46, 125, 50);     // Vert
+            int warningColor = Color.rgb(237, 108, 0);     // Orange
+            int errorColor = Color.rgb(198, 40, 40);       // Rouge
 
-            // Création des styles
+            // Création des styles cohérents
             Paint headerPaint = new Paint();
             headerPaint.setTextSize(28);
             headerPaint.setFakeBoldText(true);
             headerPaint.setColor(primaryColor);
+            headerPaint.setTextAlign(Paint.Align.CENTER);
 
             Paint sectionPaint = new Paint();
             sectionPaint.setTextSize(20);
             sectionPaint.setFakeBoldText(true);
             sectionPaint.setColor(secondaryColor);
+            sectionPaint.setTextAlign(Paint.Align.LEFT);
 
             Paint textPaint = new Paint();
             textPaint.setTextSize(16);
@@ -626,118 +605,174 @@ public class CustomerDataActivity extends AppCompatActivity {
             labelPaint.setFakeBoldText(true);
             labelPaint.setColor(textColor);
 
-            Paint backgroundPaint = new Paint();
-            backgroundPaint.setColor(lightGray);
-            backgroundPaint.setStyle(Paint.Style.FILL);
-
             Paint scorePaint = new Paint();
             scorePaint.setTextSize(18);
             scorePaint.setFakeBoldText(true);
+            scorePaint.setTextAlign(Paint.Align.CENTER);
+
+            Paint backgroundPaint = new Paint();
+            backgroundPaint.setColor(lightGray);
+            backgroundPaint.setStyle(Paint.Style.FILL);
 
             Paint linePaint = new Paint();
             linePaint.setColor(Color.LTGRAY);
             linePaint.setStrokeWidth(1);
 
+            // Ajouter ces définitions avec les autres Paint
+            Paint borderPaint = new Paint();
+            borderPaint.setColor(Color.LTGRAY);
+            borderPaint.setStyle(Paint.Style.STROKE);
+            borderPaint.setStrokeWidth(2);
+
             int contentWidth = 515;
             int pageMargin = 40;
             int currentPage = 1;
 
-            // --- PAGE 1 : Infos de base ---
+            // --- PAGE 1 : Portrait + Informations personnelles ---
             PdfDocument.PageInfo pageInfo1 = new PdfDocument.PageInfo.Builder(595, 842, currentPage).create();
             PdfDocument.Page page1 = pdfDocument.startPage(pageInfo1);
             Canvas canvas = page1.getCanvas();
             int x = pageMargin;
             int y = 60;
 
-            canvas.drawText("Résultat d'inspection", x, y, headerPaint);
+            // Titre principal centré avec ligne de séparation
+            canvas.drawText("Informations Personnelles", x + contentWidth/2, y, headerPaint);
             y += 40;
 
+            // Section Portrait sans fond
             if (portraitBitmap != null) {
-                canvas.drawText("Portrait du document", x, y, sectionPaint);
-                y += 20;
-                Bitmap scaledPortrait = Bitmap.createScaledBitmap(portraitBitmap, 155, 155, true);
-                canvas.drawBitmap(scaledPortrait, x, y, null);
-                y += 160;
+                canvas.drawText("Portrait", x, y, sectionPaint);
+                y += 25;
+
+                // Image portrait centrée
+                int portraitSize = 180;
+                Bitmap scaledPortrait = Bitmap.createScaledBitmap(portraitBitmap, portraitSize, portraitSize, true);
+                int portraitX = x + (contentWidth - portraitSize) / 2;
+                canvas.drawBitmap(scaledPortrait, portraitX, y, null);
+                y += portraitSize + 30;
+
             }
 
-            canvas.drawRect(x, y, x + contentWidth, y + 30, backgroundPaint);
-            canvas.drawText("Informations Personnelles", x + 10, y + 22, sectionPaint);
-            y += 40;
-            canvas.drawText("Nom complet: ", x, y, labelPaint);
-            canvas.drawText(name + " " + surname, x + 150, y, textPaint); y += 25;
-            canvas.drawText("Sexe: ", x, y, labelPaint);
-            canvas.drawText(gender, x + 150, y, textPaint); y += 25;
-            canvas.drawText("Date de naissance: ", x, y, labelPaint);
-            canvas.drawText(dateOfBirth, x + 150, y, textPaint); y += 25;
-            canvas.drawText("Nationalité: ", x, y, labelPaint);
-            canvas.drawText(nationality, x + 150, y, textPaint); y += 40;
+            // Informations personnelles organisées en deux colonnes
+            int col1X = x;
+            int col2X = x + 250;
+            int infoStartY = y;
 
-            canvas.drawRect(x, y, x + contentWidth, y + 30, backgroundPaint);
-            canvas.drawText("Informations du Document", x + 10, y + 22, sectionPaint);
-            y += 40;
-            canvas.drawText("Type de document: " + docType, x, y, textPaint); y += 25;
-            canvas.drawText("Numéro: " + documentNumber, x, y, textPaint); y += 25;
-            canvas.drawText("Expiration: " + dateOfExpiry, x, y, textPaint); y += 25;
-            canvas.drawText("Autorité: " + issuingAuthority, x, y, textPaint); y += 40;
+            canvas.drawText("Détails Personnels", x, y, sectionPaint);
+            y += 30;
 
-            if (rectoBitmap != null) {
-                canvas.drawText("Document", x, y, sectionPaint);
-                y += 20;
-                float aspectRatio = (float) rectoBitmap.getWidth() / rectoBitmap.getHeight();
-                int docWidth = 300;
-                int docHeight = (int) (docWidth / aspectRatio);
-                if (docHeight > 200) {
-                    docHeight = 200;
-                    docWidth = (int) (docHeight * aspectRatio);
-                }
-                Bitmap scaledRecto = Bitmap.createScaledBitmap(rectoBitmap, docWidth, docHeight, true);
-                canvas.drawBitmap(scaledRecto, x, y, null);
-            }
+            canvas.drawText("Nom complet: ", col1X, y, labelPaint);
+            canvas.drawText(name + " " + surname, col2X, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Sexe: ", col1X, y, labelPaint);
+            canvas.drawText(gender, col2X, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Date de naissance: ", col1X, y, labelPaint);
+            canvas.drawText(dateOfBirth, col2X, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Nationalité: ", col1X, y, labelPaint);
+            canvas.drawText(nationality, col2X, y, textPaint);
+            y += 40;
+
+            // Informations document en dessous
+            canvas.drawText("Détails du Document", x, y, sectionPaint);
+            y += 30;
+
+            canvas.drawText("Type de document: ", col1X, y, labelPaint);
+            canvas.drawText(docType, col2X, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Numéro: ", col1X, y, labelPaint);
+            canvas.drawText(documentNumber, col2X, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Expiration: ", col1X, y, labelPaint);
+            canvas.drawText(dateOfExpiry, col2X, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Autorité: ", col1X, y, labelPaint);
+            canvas.drawText(issuingAuthority, col2X, y, textPaint);
 
             pdfDocument.finishPage(page1);
 
-            // --- PAGE 2 : Cohérence + inspection ---
+            // --- PAGE 2 : Photo du document + Vérifications ---
             currentPage++;
             PdfDocument.PageInfo pageInfo2 = new PdfDocument.PageInfo.Builder(595, 842, currentPage).create();
             PdfDocument.Page page2 = pdfDocument.startPage(pageInfo2);
             canvas = page2.getCanvas();
-            x = pageMargin; y = 60;
+            x = pageMargin;
+            y = 60;
 
-            // Section : Vérification de cohérence (MRZ - Portrait)
-
-            canvas.drawRect(x, y, x + contentWidth, y + 30, backgroundPaint);
-            canvas.drawText("Vérification de cohérence (MRZ - Portrait)", x + 10, y + 22, sectionPaint);
+            // Titre principal centré avec ligne de séparation
+            canvas.drawText("Document et Vérifications", x + contentWidth/2, y, headerPaint);
             y += 40;
 
-            canvas.drawText("Comparaison âge : " + (ageComparisonStatus != null ? ageComparisonStatus : "N/A"), x, y, textPaint);
-            y += 25;
+            // Photo du document sans fond
+            if (rectoBitmap != null) {
+                canvas.drawText("Photo du Document", x, y, sectionPaint);
+                y += 25;
 
-            canvas.drawText("Comparaison genre : " + (genderComparisonStatus != null ? genderComparisonStatus : "N/A"), x, y, textPaint);
-            y += 40;
+                float aspectRatio = (float) rectoBitmap.getWidth() / rectoBitmap.getHeight();
+                int docWidth = 350;
+                int docHeight = (int) (docWidth / aspectRatio);
 
-// Section : Statuts d’inspection du document
+                if (docHeight > 220) {
+                    docHeight = 220;
+                    docWidth = (int) (docHeight * aspectRatio);
+                }
 
-            canvas.drawRect(x, y, x + contentWidth, y + 30, backgroundPaint);
-            canvas.drawText("Statuts d'inspection du documen", x + 10, y + 22, sectionPaint);
-            y += 40;
+                Bitmap scaledRecto = Bitmap.createScaledBitmap(rectoBitmap, docWidth, docHeight, true);
+                int docX = x + (contentWidth - docWidth) / 2;
+                canvas.drawBitmap(scaledRecto, docX, y, null);
+                y += docHeight + 30;
 
-            canvas.drawText("Expiration : " + (expirationStatusText != null ? expirationStatusText : "N/A"), x, y, textPaint);
-            y += 25;
+            }
 
-            canvas.drawText("MRZ : " + (mrzStatusText != null ? mrzStatusText : "N/A"), x, y, textPaint);
-            y += 25;
+            // Section Vérifications avec cadre
+            int verificationStartY = y;
+            canvas.drawText("Vérifications du document", x, y, sectionPaint);
+            y += 30;
 
-            canvas.drawText("Copie imprimée : " + (printCopyStatusText != null ? printCopyStatusText : "N/A"), x, y, textPaint);
-            y += 25;
+            // Affichage des résultats de vérification dans un cadre
+            int statusStartY = y;
 
-            canvas.drawText("Cohérence du texte : " + (textConsistencyStatusText != null ? textConsistencyStatusText : "N/A"), x, y, textPaint);
-            y += 25;
+            if (expirationStatusText != null) {
+                canvas.drawText("• " + expirationStatusText, x + 10, y, textPaint);
+                y += 25;
+            }
 
-            canvas.drawText("Confiance OCR : " + (ocrConfidenceStatusText != null ? ocrConfidenceStatusText : "N/A"), x, y, textPaint);
-            y += 25;
+            if (mrzStatusText != null) {
+                canvas.drawText("• " + mrzStatusText, x + 10, y, textPaint);
+                y += 25;
+            }
 
-            canvas.drawText("Capture d'écran : " + (screenshotStatusText != null ? screenshotStatusText : "N/A"), x, y, textPaint);
-            y += 25;
+            if (printCopyStatusText != null) {
+                canvas.drawText("• " + printCopyStatusText, x + 10, y, textPaint);
+                y += 25;
+            }
+
+            if (textConsistencyStatusText != null) {
+                canvas.drawText("• " + textConsistencyStatusText, x + 10, y, textPaint);
+                y += 25;
+            }
+
+            if (ocrConfidenceStatusText != null) {
+                canvas.drawText("• " + ocrConfidenceStatusText, x + 10, y, textPaint);
+                y += 25;
+            }
+
+            if (screenshotStatusText != null) {
+                canvas.drawText("• " + screenshotStatusText, x + 10, y, textPaint);
+                y += 25;
+            }
+
+            if (genderComparisonStatus != null) {
+                canvas.drawText("• " + genderComparisonStatus, x + 10, y, textPaint);
+                y += 25;
+            }
 
             pdfDocument.finishPage(page2);
 
@@ -746,9 +781,10 @@ public class CustomerDataActivity extends AppCompatActivity {
             PdfDocument.PageInfo pageInfo3 = new PdfDocument.PageInfo.Builder(595, 842, currentPage).create();
             PdfDocument.Page page3 = pdfDocument.startPage(pageInfo3);
             canvas = page3.getCanvas();
-            x = pageMargin; y = 60;
+            x = pageMargin;
+            y = 60;
 
-            Page3Fragment page3Fragment = (Page3Fragment) mViewPager.getAdapter().instantiateItem(mViewPager, 2);
+            Page3Fragment page3Fragment = (Page3Fragment) mViewPager.getAdapter().instantiateItem(mViewPager, 3);
             String portraitSelfieScore = "N/A";
             String rfidSelfieScore = "N/A";
             if (page3Fragment != null) {
@@ -757,35 +793,72 @@ public class CustomerDataActivity extends AppCompatActivity {
                 rfidSelfieScore = page3Data.optString("rfidSelfieScore", "N/A");
             }
 
-            canvas.drawText("Comparaison Portrait Document vs Selfie", x, y, headerPaint); y += 40;
-            canvas.drawText("Score: " + portraitSelfieScore, x, y, scorePaint); y += 30;
+            // ======= SECTION 1 : Portrait vs Selfie =======
+            canvas.drawText("Comparaison des Visages", x + contentWidth/2, y, headerPaint);
+            y += 40;
+
+            // Sous-titre centré
+            Paint subtitlePaint = new Paint(sectionPaint);
+            subtitlePaint.setTextAlign(Paint.Align.CENTER);
+            canvas.drawText("Portrait Document vs Photo live", x + contentWidth/2, y, subtitlePaint);
+            y += 30;
+
+            // Score centré
+            setScoreColor(scorePaint, portraitSelfieScore, successColor, warningColor, errorColor);
+            canvas.drawText("Score: " + portraitSelfieScore, x + contentWidth/2, y, scorePaint);
+            y += 30;
+
+            // Images centrées
+            int imageWidth = 150;
+            int imageHeight = 200;
+            int spacing = 50;
+            int totalImagesWidth = (imageWidth * 2) + spacing;
+            int startX = x + (contentWidth - totalImagesWidth) / 2;
 
             if (CustomerDataActivity.portraitBitmap != null) {
-                Bitmap scaledPortrait = Bitmap.createScaledBitmap(CustomerDataActivity.portraitBitmap,150,200,true);
-                canvas.drawBitmap(scaledPortrait, x, y, null);
-                canvas.drawText("Portrait", x, y+220, textPaint);
+                Bitmap scaledPortrait = Bitmap.createScaledBitmap(CustomerDataActivity.portraitBitmap, imageWidth, imageHeight, true);
+                canvas.drawBitmap(scaledPortrait, startX, y, null);
+                float textWidth = textPaint.measureText("Portrait");
+                canvas.drawText("Portrait", startX + (imageWidth - textWidth) / 2, y + imageHeight + 20, textPaint);
             }
+
             if (CustomerDataActivity.selfieBitmap != null) {
-                Bitmap scaledSelfie = Bitmap.createScaledBitmap(CustomerDataActivity.selfieBitmap,150,200,true);
-                canvas.drawBitmap(scaledSelfie, x+200, y, null);
-                canvas.drawText("Selfie", x+200, y+220, textPaint);
+                Bitmap scaledSelfie = Bitmap.createScaledBitmap(CustomerDataActivity.selfieBitmap, imageWidth, imageHeight, true);
+                int selfieX = startX + imageWidth + spacing;
+                canvas.drawBitmap(scaledSelfie, selfieX, y, null);
+                float textWidth = textPaint.measureText("Photo live");
+                canvas.drawText("Photo live", selfieX + (imageWidth - textWidth) / 2, y + imageHeight + 20, textPaint);
             }
-            y += 260;
 
-            canvas.drawLine(x, y, x+contentWidth, y, linePaint); y += 20;
+            y += imageHeight + 60;
+            canvas.drawLine(x, y, x + contentWidth, y, linePaint);
+            y += 40;
 
-            canvas.drawText("Comparaison Photo RFID vs Selfie", x, y, headerPaint); y += 40;
-            canvas.drawText("Score: " + rfidSelfieScore, x, y, scorePaint); y += 30;
+            // ======= SECTION 2 : RFID vs Selfie =======
+            canvas.drawText("Photo RFID vs Photo live", x + contentWidth/2, y, subtitlePaint);
+            y += 30;
+
+            // Score centré
+            setScoreColor(scorePaint, rfidSelfieScore, successColor, warningColor, errorColor);
+            canvas.drawText("Score: " + rfidSelfieScore, x + contentWidth/2, y, scorePaint);
+            y += 30;
+
+            // Images centrées
+            startX = x + (contentWidth - totalImagesWidth) / 2;
 
             if (CustomerDataActivity.rfidBitmap != null) {
-                Bitmap scaledRfid = Bitmap.createScaledBitmap(CustomerDataActivity.rfidBitmap,150,200,true);
-                canvas.drawBitmap(scaledRfid, x, y, null);
-                canvas.drawText("Photo RFID", x, y+220, textPaint);
+                Bitmap scaledRfid = Bitmap.createScaledBitmap(CustomerDataActivity.rfidBitmap, imageWidth, imageHeight, true);
+                canvas.drawBitmap(scaledRfid, startX, y, null);
+                float textWidth = textPaint.measureText("Photo RFID");
+                canvas.drawText("Photo RFID", startX + (imageWidth - textWidth) / 2, y + imageHeight + 20, textPaint);
             }
+
             if (CustomerDataActivity.selfieBitmap != null) {
-                Bitmap scaledSelfie = Bitmap.createScaledBitmap(CustomerDataActivity.selfieBitmap,150,200,true);
-                canvas.drawBitmap(scaledSelfie, x+200, y, null);
-                canvas.drawText("Selfie", x+200, y+220, textPaint);
+                Bitmap scaledSelfie = Bitmap.createScaledBitmap(CustomerDataActivity.selfieBitmap, imageWidth, imageHeight, true);
+                int selfieX = startX + imageWidth + spacing;
+                canvas.drawBitmap(scaledSelfie, selfieX, y, null);
+                float textWidth = textPaint.measureText("Photo live");
+                canvas.drawText("Photo live", selfieX + (imageWidth - textWidth) / 2, y + imageHeight + 20, textPaint);
             }
 
             pdfDocument.finishPage(page3);
@@ -798,7 +871,7 @@ public class CustomerDataActivity extends AppCompatActivity {
             x = pageMargin;
             y = 60;
 
-            Page4Fragment page4Fragment = (Page4Fragment) mViewPager.getAdapter().instantiateItem(mViewPager, 3);
+            Page4Fragment page4Fragment = (Page4Fragment) mViewPager.getAdapter().instantiateItem(mViewPager, 4);
             String facialSimilarityScore = "N/A";
             JSONObject rfidData = null;
             JSONObject mrzData = null;
@@ -810,52 +883,57 @@ public class CustomerDataActivity extends AppCompatActivity {
                 facialSimilarityScore = page4Data.optString("facialSimilarityScore", "N/A");
             }
 
-// Titre
-            canvas.drawText("Comparaison Photo RFID vs Portrait Document", x, y, headerPaint);
+            // Titre centré
+            canvas.drawText("Comparaison RFID et Document", x + contentWidth/2, y, headerPaint);
             y += 40;
 
-// Affichage des images
+            // Images centrées
             int imgWidth = 200;
             int imgHeight = 250;
+            spacing = 50;
+            totalImagesWidth = (imgWidth * 2) + spacing;
+            startX = x + (contentWidth - totalImagesWidth) / 2;
+
             if (CustomerDataActivity.rfidBitmap != null) {
                 Bitmap scaledRfid = Bitmap.createScaledBitmap(CustomerDataActivity.rfidBitmap, imgWidth, imgHeight, true);
-                canvas.drawBitmap(scaledRfid, x, y, null);
-                canvas.drawText("Photo RFID", x, y + imgHeight + 20, textPaint);
+                canvas.drawBitmap(scaledRfid, startX, y, null);
+                float textWidth = textPaint.measureText("Photo RFID");
+                canvas.drawText("Photo RFID", startX + (imgWidth - textWidth) / 2, y + imgHeight + 20, textPaint);
             }
 
             if (CustomerDataActivity.portraitBitmap != null) {
                 Bitmap scaledPortrait = Bitmap.createScaledBitmap(CustomerDataActivity.portraitBitmap, imgWidth, imgHeight, true);
-                canvas.drawBitmap(scaledPortrait, x + 250, y, null);
-                canvas.drawText("Portrait Document", x + 250, y + imgHeight + 20, textPaint);
+                int portraitX = startX + imgWidth + spacing;
+                canvas.drawBitmap(scaledPortrait, portraitX, y, null);
+                float textWidth = textPaint.measureText("Portrait Document");
+                canvas.drawText("Portrait Document", portraitX + (imgWidth - textWidth) / 2, y + imgHeight + 20, textPaint);
             }
 
-            y += imgHeight + 60; // Décalage après les images
+            y += imgHeight + 60;
 
-// Score de similarité
-            canvas.drawText("Score de similarité faciale : " + facialSimilarityScore, x, y, scorePaint);
+            // Score de similarité centré
+            setScoreColor(scorePaint, facialSimilarityScore, successColor, warningColor, errorColor);
+            String similarityText = "Score de similarité: " + facialSimilarityScore;
+            canvas.drawText(similarityText, x + contentWidth/2, y, scorePaint);
             y += 40;
 
-// --- Tableau comparatif RFID vs MRZ ---
+            // Tableau comparatif RFID vs MRZ
             if (rfidData != null && mrzData != null) {
-                int col1X = x;
-                int col2X = x + 200;
-                int col3X = x + 400;
-                int tableY = y;
+                // En-tête du tableau
+                canvas.drawRect(x, y, x + contentWidth, y + 30, backgroundPaint);
+                canvas.drawText("Champ", x + 20, y + 20, labelPaint);
+                canvas.drawText("RFID", x + 200, y + 20, labelPaint);
+                canvas.drawText("MRZ", x + 400, y + 20, labelPaint);
+                y += 35;
 
-                canvas.drawRect(col1X, tableY, col3X + 100, tableY + 30, backgroundPaint);
-                canvas.drawText("Champ", col1X + 10, tableY + 20, labelPaint);
-                canvas.drawText("RFID", col2X + 10, tableY + 20, labelPaint);
-                canvas.drawText("MRZ", col3X + 10, tableY + 20, labelPaint);
-                tableY += 35;
-
-                String[] fields = {"Nom","Prénom","Sexe","Nationalité","Naissance","Numéro","Expiration","Autorité","Type"};
-                String[] keys = {"surname","givenName","gender","nationality","dateOfBirth","documentNumber","dateOfExpiry","issuerAuthority","docType"};
+                String[] fields = {"Nom", "Prénom", "Sexe", "Nationalité", "Naissance", "Numéro", "Expiration", "Autorité", "Type"};
+                String[] keys = {"surname", "givenName", "gender", "nationality", "dateOfBirth", "documentNumber", "dateOfExpiry", "issuerAuthority", "docType"};
 
                 for (int i = 0; i < fields.length; i++) {
                     String rfidVal = rfidData.optString(keys[i], "N/A");
                     String mrzVal = mrzData.optString(keys[i], "N/A");
-                    drawTableRow(canvas, textPaint, col1X + 10, col2X + 10, col3X + 10, fields[i], rfidVal, mrzVal, tableY + 18);
-                    tableY += 25;
+                    drawTableRow(canvas, textPaint, x + 20, x + 200, x + 400, fields[i], rfidVal, mrzVal, y + 18);
+                    y += 25;
                 }
             }
 
@@ -864,22 +942,39 @@ public class CustomerDataActivity extends AppCompatActivity {
             // --- Sauvegarde ---
             file = new File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    "fiche_client_" + surname + "_" + System.currentTimeMillis() + ".pdf"
+                    "fiche_passager_" + surname + "_" + System.currentTimeMillis() + ".pdf"
             );
+
             try {
                 pdfDocument.writeTo(new FileOutputStream(file));
-
             } catch (IOException e) {
-                Log.e("PDF_GENERATION","Error writing PDF",e);
+                Log.e("PDF_GENERATION", "Error writing PDF", e);
             }
             pdfDocument.close();
 
         } catch (JSONException e) {
-            Log.e("JSON_PARSING","Error parsing JSON",e);
+            Log.e("JSON_PARSING", "Error parsing JSON", e);
         }
         return file;
     }
 
+    // Méthode utilitaire pour définir la couleur du score
+    private void setScoreColor(Paint paint, String scoreText, int successColor, int warningColor, int errorColor) {
+        try {
+            float score = Float.parseFloat(scoreText);
+            if (score >= 80) {
+                paint.setColor(successColor);
+            } else if (score >= 50) {
+                paint.setColor(warningColor);
+            } else {
+                paint.setColor(errorColor);
+            }
+        } catch (NumberFormatException e) {
+            paint.setColor(errorColor);
+        }
+    }
+
+    // Méthode utilitaire pour dessiner une ligne du tableau
     private void drawTableRow(Canvas canvas, Paint paint, int col1X, int col2X, int col3X,
                               String label, String dataRfid, String dataMrz, int y) {
         canvas.drawText(label, col1X, y, paint);
@@ -892,22 +987,64 @@ public class CustomerDataActivity extends AppCompatActivity {
         canvas.drawText(dataRfid, col2X, y, dataPaint);
         canvas.drawText(dataMrz, col3X, y, dataPaint);
     }
-    private boolean areAllDataReady() {
-        return portraitBitmap != null &&
-                rectoBitmap != null &&
-                CustomerDataActivity.selfieBitmap != null &&
-                CustomerDataActivity.rfidBitmap != null &&
-                CustomerDataActivity.portraitBitmap != null &&
 
-                expirationStatusText != null &&
-                mrzStatusText != null &&
-                printCopyStatusText != null &&
-                textConsistencyStatusText != null &&
-                ocrConfidenceStatusText != null &&
-                screenshotStatusText != null &&
-                ageComparisonStatus != null &&
-                genderComparisonStatus != null;
+    private boolean areAllDataReady() {
+        boolean ready = true;
+
+        if (portraitBitmap == null) {
+            Log.w("DATA_CHECK", "portraitBitmap est NULL");
+            ready = false;
+        }
+        if (rectoBitmap == null) {
+            Log.w("DATA_CHECK", "rectoBitmap est NULL");
+            ready = false;
+        }
+        if (CustomerDataActivity.selfieBitmap == null) {
+            Log.w("DATA_CHECK", "selfieBitmap est NULL");
+            ready = false;
+        }
+        if (CustomerDataActivity.rfidBitmap == null) {
+            Log.w("DATA_CHECK", "rfidBitmap est NULL");
+            ready = false;
+        }
+        if (CustomerDataActivity.portraitBitmap == null) {
+            Log.w("DATA_CHECK", "CustomerDataActivity.portraitBitmap est NULL");
+            ready = false;
+        }
+
+        if (expirationStatusText == null) {
+            Log.w("DATA_CHECK", "expirationStatusText est NULL");
+            ready = false;
+        }
+        if (mrzStatusText == null) {
+            Log.w("DATA_CHECK", "mrzStatusText est NULL");
+            ready = false;
+        }
+        if (printCopyStatusText == null) {
+            Log.w("DATA_CHECK", "printCopyStatusText est NULL");
+            ready = false;
+        }
+        if (textConsistencyStatusText == null) {
+            Log.w("DATA_CHECK", "textConsistencyStatusText est NULL");
+            ready = false;
+        }
+        if (ocrConfidenceStatusText == null) {
+            Log.w("DATA_CHECK", "ocrConfidenceStatusText est NULL");
+            ready = false;
+        }
+        if (screenshotStatusText == null) {
+            Log.w("DATA_CHECK", "screenshotStatusText est NULL");
+            ready = false;
+        }
+        if (genderComparisonStatus == null) {
+            Log.w("DATA_CHECK", "genderComparisonStatus est NULL");
+            ready = false;
+        }
+
+        Log.d("DATA_CHECK", "Toutes les données prêtes ? " + ready);
+        return ready;
     }
+
 }
 // You also need to add the getPdfData() method to your Page3Fragment.
 // I recommend adding the method as shown in the previous response.}

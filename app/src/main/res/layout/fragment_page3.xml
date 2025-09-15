@@ -58,11 +58,11 @@
                                 android:text="Portrait du document"
                                 android:layout_marginBottom="8dp" />
 
-                            <ImageView
+                            <com.jsibbold.zoomage.ZoomageView
                                 android:id="@+id/portraitImageView"
                                 android:layout_width="140dp"
                                 android:layout_height="180dp"
-                                android:scaleType="centerCrop"/>
+                                android:scaleType="centerCrop" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -75,7 +75,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Selfie client"
+                                android:text="Photo live"
                                 android:layout_marginBottom="8dp" />
 
                             <!-- Conteneur pour l'image selfie et le bouton caméra -->
@@ -83,7 +83,7 @@
                                 android:layout_width="140dp"
                                 android:layout_height="180dp">
 
-                                <ImageView
+                                <com.jsibbold.zoomage.ZoomageView
                                     android:id="@+id/imageView2"
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
@@ -182,7 +182,7 @@
                                 android:text="Portrait RFID"
                                 android:layout_marginBottom="8dp" />
 
-                            <ImageView
+                            <com.jsibbold.zoomage.ZoomageView
                                 android:id="@+id/rfidImageView"
                                 android:layout_width="140dp"
                                 android:layout_height="180dp"
@@ -199,7 +199,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Selfie client"
+                                android:text="Photo live"
                                 android:layout_marginBottom="8dp" />
 
                             <!-- Conteneur pour l'image selfie et le bouton caméra (2ème emplacement) -->
@@ -207,7 +207,7 @@
                                 android:layout_width="140dp"
                                 android:layout_height="180dp">
 
-                                <ImageView
+                                <com.jsibbold.zoomage.ZoomageView
                                     android:id="@+id/selfieIMG"
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"

@@ -4,7 +4,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="@color/white"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
@@ -23,13 +24,19 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
 
-            <ImageView
+            <com.jsibbold.zoomage.ZoomageView
                 android:id="@+id/portraitImageView"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
                 android:adjustViewBounds="true"
                 android:scaleType="fitCenter"
-                android:layout_marginBottom="24dp"/>
+                android:layout_marginBottom="24dp"
+                app:zoomage_zoomable="true"
+                app:zoomage_translatable="true"
+                app:zoomage_autoCenter="true"
+                app:zoomage_animateOnReset="true"
+                app:zoomage_maxScale="8"
+                app:zoomage_minScale="0.6"/>
 
             <LinearLayout
                 android:id="@+id/rfidSection"
@@ -51,13 +58,19 @@
                     android:textStyle="bold"
                     android:layout_marginBottom="8dp"/>
 
-                <ImageView
+                <com.jsibbold.zoomage.ZoomageView
                     android:id="@+id/faceImageView"
                     android:layout_width="match_parent"
                     android:layout_height="200dp"
                     android:adjustViewBounds="true"
                     android:scaleType="fitCenter"
-                    android:layout_marginBottom="24dp"/>
+                    android:layout_marginBottom="24dp"
+                    app:zoomage_zoomable="true"
+                    app:zoomage_translatable="true"
+                    app:zoomage_autoCenter="true"
+                    app:zoomage_animateOnReset="true"
+                    app:zoomage_maxScale="8"
+                    app:zoomage_minScale="0.6"/>
             </LinearLayout>
 
             <!-- Séparateur -->
@@ -70,16 +83,22 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Recto du document"
+                android:text="Photo du document"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
 
-            <ImageView
+            <com.jsibbold.zoomage.ZoomageView
                 android:id="@+id/rectoImageView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:adjustViewBounds="true"
-                android:scaleType="fitCenter"/>
+                android:scaleType="fitCenter"
+                app:zoomage_zoomable="true"
+                app:zoomage_translatable="true"
+                app:zoomage_autoCenter="true"
+                app:zoomage_animateOnReset="true"
+                app:zoomage_maxScale="8"
+                app:zoomage_minScale="0.6"/>
 
         </LinearLayout>
     </ScrollView>

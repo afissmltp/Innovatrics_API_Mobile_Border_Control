@@ -1,11 +1,16 @@
 package com.dynamsoft.documentscanner;
 
 import android.app.Dialog;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -29,7 +34,7 @@ import java.util.Locale;
 public class Display2Activity extends AppCompatActivity {
     private ZoomageView documentImageView;
     private ProgressBar progressBar;
-    private Button readDocBtn, rotateButton;
+    private Button readDocBtn, readNfcBtn;
     // Mise à jour : Remplacer qualityStatus par les nouvelles vues
     private TextView expirationStatus, mrzStatus, textConsistencyStatus, ocrConfidenceStatus, screenshotStatus ,printCopyStatus;
     private ImageView expirationIcon, mrzIcon, textConsistencyIcon, screenshotIcon , printCopyIcon, ocrConfidenceIcon;
@@ -66,34 +71,35 @@ public class Display2Activity extends AppCompatActivity {
         TextView toolbarTitle = findViewById(R.id.toolbarTitle);
         toolbarTitle.setText("Vérification de document");
 
+        setupToolbarButtons();
         initializeViews();
         setupCustomerId();
         loadDocumentImage();
-
-
-        View bottomControlBar = findViewById(R.id.bottomControlBar);
-        if (bottomControlBar != null) {
-            ImageButton selfieBtn = bottomControlBar.findViewById(R.id.selfieBtn);
-            if (selfieBtn != null) {
-                selfieBtn.setVisibility(View.GONE); // Cacher le bouton
-            }
-            ImageButton btnGeneratePdf = bottomControlBar.findViewById(R.id.btnGeneratePdf);
-            if (btnGeneratePdf != null) {
-                btnGeneratePdf.setVisibility(View.GONE); // Cacher le bouton
-            }
-        }
-
         fetchCustomerData();
         setupButtonListeners();
     }
+    private void setupToolbarButtons() {
+        // Référence à la toolbar
+        Toolbar toolbar = findViewById(R.id.simpleToolbar);
+        if (toolbar != null) {
+            // Masquer le bouton PDF dans Display2Activity
+            ImageButton btnGeneratePdf = toolbar.findViewById(R.id.btnGeneratePdf);
+            if (btnGeneratePdf != null) {
+                btnGeneratePdf.setVisibility(View.GONE);
+            }
+            // Masquer le bouton PDF dans Display2Activity
+            ImageButton selfieBtn = toolbar.findViewById(R.id.selfieBtn);
+            if (selfieBtn != null) {
+                selfieBtn.setVisibility(View.GONE);
+            }
 
+        }
+    }
     private void initializeViews() {
         documentImageView = findViewById(R.id.documentImageView);
         progressBar = findViewById(R.id.progressBar);
         readDocBtn = findViewById(R.id.readDocBtn);
-        rotateButton = findViewById(R.id.rotateButton);
-        // Suppression de qualityStatus, non nécessaire dans le nouveau design
-        // qualityStatus = findViewById(R.id.qualityStatus);
+        readNfcBtn = findViewById(R.id.readNfcBtn);
 
         // Initialisation des nouvelles vues pour les statuts
         expirationStatus = findViewById(R.id.expirationStatus);
@@ -111,15 +117,13 @@ public class Display2Activity extends AppCompatActivity {
         printCopyIcon = findViewById(R.id.printCopyIcon);
         ocrConfidenceIcon = findViewById(R.id.ocrConfidenceIcon);
         readDocBtn.setEnabled(false);
-        rotateButton.setEnabled(false);
+        readNfcBtn.setEnabled(false);
         documentImageView.setVisibility(View.INVISIBLE);
         progressBar.setVisibility(View.VISIBLE);
 
 
         // Coherence panel
-        ageIcon = findViewById(R.id.ageIcon);
         genderIcon = findViewById(R.id.genderIcon);
-        ageStatus = findViewById(R.id.ageStatus);
         genderStatus = findViewById(R.id.genderStatus);
     }
 
@@ -131,7 +135,7 @@ public class Display2Activity extends AppCompatActivity {
         }
         customerService = new CustomerService();
     }
-    private void fetchCustomerData() {
+        private void fetchCustomerData() {
         showProgress();
         customerService.getCustomer(customerId, new CustomerService.ApiCallback() {
             @Override
@@ -160,37 +164,23 @@ public class Display2Activity extends AppCompatActivity {
 
     private void updateUIWithCustomer(JSONObject response) throws JSONException {
         JSONObject customer = response.getJSONObject("customer");
-
-        // ---- Vérifications de cohérence ----
-        int ageMRZ = customer.getJSONObject("age").getInt("mrz");
-        int agePortrait = customer.getJSONObject("age").getInt("documentPortrait");
-        if (ageMRZ == agePortrait) {
-            ageIcon.setImageResource(R.drawable.ic_check_circle);
-            ageIcon.setColorFilter(getResources().getColor(R.color.green));
-            ageComparisonStatus = "Âge : ✔ (" + ageMRZ + " vs " + agePortrait + ")";
-            ageStatus.setText(ageComparisonStatus);
-        } else {
-            ageIcon.setImageResource(R.drawable.ic_error_circle);
-            ageIcon.setColorFilter(getResources().getColor(R.color.red));
-            ageComparisonStatus = "Âge : ❌ (" + ageMRZ + " vs " + agePortrait + ")";
-            ageStatus.setText(ageComparisonStatus);
-        }
-
+        // ---- Vérification de cohérence : Genre ----
         String genderMRZ = customer.getJSONObject("gender").getString("mrz");
         String genderPortrait = customer.getJSONObject("gender").getString("documentPortrait");
         if (genderMRZ.equalsIgnoreCase(genderPortrait)) {
             genderIcon.setImageResource(R.drawable.ic_check_circle);
             genderIcon.setColorFilter(getResources().getColor(R.color.green));
-            genderComparisonStatus = "Genre : ✔ (" + genderMRZ + ")";
+            genderComparisonStatus = "Genre : (" + genderMRZ + ") ✔";
             genderStatus.setText(genderComparisonStatus);
         } else {
             genderIcon.setImageResource(R.drawable.ic_error_circle);
             genderIcon.setColorFilter(getResources().getColor(R.color.red));
-            genderComparisonStatus = "Genre : ❌ (MRZ: " + genderMRZ + " vs Portrait: " + genderPortrait + ")";
+            genderComparisonStatus = "Genre : (MRZ: " + genderMRZ + " vs Portrait: " + genderPortrait + ") ❌";
             genderStatus.setText(genderComparisonStatus);
         }
+
         readDocBtn.setEnabled(true);
-        rotateButton.setEnabled(true);
+        readNfcBtn.setEnabled(true);
     }
 
     private void inspectDocument() {
@@ -279,12 +269,11 @@ public class Display2Activity extends AppCompatActivity {
         });
     }
     private void setupButtonListeners() {
-        rotateButton.setOnClickListener(v -> rotateImage());
 
         readDocBtn.setOnClickListener(v -> {
             if (!isDocumentInspected) {
                 inspectDocument();
-                Toast.makeText(this, "Inspection du document en cours...", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Inspection d'authenticité du document en cours...", Toast.LENGTH_SHORT).show();
                 return;
             }else {
                 navigateToCustomerData();
@@ -297,22 +286,12 @@ public class Display2Activity extends AppCompatActivity {
             startActivityForResult(intent, 1001);
         });
 
-        findViewById(R.id.selfieBtn).setOnClickListener(v -> {
-            Intent intent = new Intent(this, SelfieCameraActivity.class);
-            intent.putExtra("customerId", customerId);
-            intent.putExtra("parentActivity", "Display2Activity");
-            startActivityForResult(intent, 1001);
-        });
-
-        findViewById(R.id.selfieBtn).setOnClickListener(v -> {
-            Intent intent = new Intent(this, SelfieCameraActivity.class);
-            intent.putExtra("customerId", customerId);
-            intent.putExtra("parentActivity", "CustomerDataActivity");
-            startActivityForResult(intent, 1001);
-        });
         documentImageView.setOnClickListener(v -> {
             Bitmap bitmap = ((BitmapDrawable) documentImageView.getDrawable()).getBitmap();
-            showImageFullscreen(bitmap);
+            FullscreenImageDialog.show(this, bitmap, () -> {
+                // Optionnel : action après la sauvegarde
+                Log.d("FullscreenDialog", "Image saved callback");
+            });
         });
 
         ImageButton homebtn = findViewById(R.id.homeButton);
@@ -320,32 +299,6 @@ public class Display2Activity extends AppCompatActivity {
             Intent intent = new Intent(this, HomeActivity.class);
             startActivity(intent);
         });
-
-        ImageButton docScanButton = findViewById(R.id.docScanButton);
-        homebtn.setOnClickListener(v -> {
-            Intent intent = new Intent(this, HomeActivity.class);
-            startActivity(intent);
-        });
-
-        docScanButton.setOnClickListener(v -> onScanButtonClicked());
-
-    }
-    private void onScanButtonClicked() {
-        Intent intent = new Intent(this, CameraActivity2.class);
-        intent.putExtra("customerId", customerId);
-        startActivity(intent);
-    }
-    private void showImageFullscreen(Bitmap bitmap) {
-        Dialog dialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-        dialog.setContentView(R.layout.dialog_fullscreen_image);
-
-        ImageView imageView = dialog.findViewById(R.id.dialogImageView);
-        imageView.setImageBitmap(bitmap);
-
-        // Fermer au clic
-        imageView.setOnClickListener(v -> dialog.dismiss());
-
-        dialog.show();
     }
     private void handleInspectionError(String message, Exception e) {
         Log.e("DisplayActivity", message, e);
@@ -369,29 +322,6 @@ public class Display2Activity extends AppCompatActivity {
             Toast.makeText(this, message + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
         });
     }
-    private void rotateImage() {
-        rotation = (rotation + 90) % 360;
-        documentImageView.setRotation(rotation);
-    }
-
-    /*private void navigateToCustomerData() {
-        if (customerId != null) {
-            Intent intent = new Intent(this, CustomerDataActivity.class);
-            intent.putExtra("customerId", customerId);
-
-            intent.putExtra("expirationStatus", expirationStatusText);
-            intent.putExtra("mrzStatus", mrzStatusText);
-            intent.putExtra("textConsistencyStatus", textConsistencyStatusText);
-            intent.putExtra("ocrConfidenceStatus", ocrConfidenceStatusText);
-            intent.putExtra("screenshotStatus", screenshotStatusText);
-            intent.putExtra("printCopyStatus", printCopyStatusText);
-            intent.putExtra("ageComparison", ageComparisonStatus);
-            intent.putExtra("genderComparison", genderComparisonStatus);
-
-            startActivity(intent);
-        }
-    }*/
-
     private void navigateToCustomerData() {
         if (customerId != null) {
             SessionData data = SessionData.getInstance();
@@ -409,8 +339,6 @@ public class Display2Activity extends AppCompatActivity {
             startActivity(intent);
         }
     }
-
-
     private void loadDocumentImage() {
         showProgress();
         customerService.getFrontDocument(customerId, 600, new CustomerService.ApiCallback() {
@@ -432,7 +360,6 @@ public class Display2Activity extends AppCompatActivity {
             }
         });
     }
-
     private void updateDocumentImage() {
         runOnUiThread(() -> {
             documentImageView.setImageBitmap(displayedBitmap);
@@ -442,9 +369,8 @@ public class Display2Activity extends AppCompatActivity {
     }
     private void enableControls() {
         readDocBtn.setEnabled(true);
-        rotateButton.setEnabled(true);
+        readNfcBtn.setEnabled(true);
     }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -457,8 +383,6 @@ public class Display2Activity extends AppCompatActivity {
             startActivity(intent);
         }
     }
-
-
     private Bitmap decodeBase64ToBitmap(String base64Image) {
         try {
             String base64Data = base64Image.contains(",") ? base64Image.split(",")[1] : base64Image;

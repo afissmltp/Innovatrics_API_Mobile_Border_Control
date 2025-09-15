@@ -1,48 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.appcompat.widget.Toolbar
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/simpleToolbar"
     android:layout_width="match_parent"
     android:layout_height="?attr/actionBarSize"
     android:background="@color/purple_500"
     android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp">
+    android:paddingStart="0dp"
+    android:paddingEnd="5dp">
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center">
 
-        <ImageButton
-            android:id="@+id/homeButton"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_home"
-            android:contentDescription="Accueil" />
+            <!-- Home Button -->
+            <ImageButton
+                android:id="@+id/homeButton"
+                android:layout_width="39dp"
+                android:layout_height="24dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_home"
+                android:contentDescription="Accueil"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true" />
 
+        <!-- Titre (prend l’espace dispo au centre) -->
         <TextView
             android:id="@+id/toolbarTitle"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Vérification de document"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Document check"
             android:textColor="@color/white"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_centerInParent="true"/>
+            android:textStyle="bold"/>
 
+        <!-- Bouton Selfie -->
         <ImageButton
-            android:id="@+id/docScanButton"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
+            android:id="@+id/btnGeneratePdf"
+            android:layout_width="39dp"
+            android:layout_height="24dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Scanner document"
-            android:src="@drawable/ic_document_scanner" />
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_share_" />
 
-    </RelativeLayout>
+        <!-- Bouton caméra -->
+        <ImageButton
+            android:id="@+id/selfieBtn"
+            android:layout_width="39dp"
+            android:layout_height="24dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="centerInside"
+            android:src="@drawable/facial_recognition" />
+        <!-- Bouton caméra -->
+        <ImageButton
+            android:id="@+id/readNfcBtn"
+            android:layout_width="39dp"
+            android:layout_height="24dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_nfc" />
+
+    </LinearLayout>
 </androidx.appcompat.widget.Toolbar>
