@@ -23,10 +23,9 @@ Le traitement biométrique et documentaire est effectué via le **backend Innova
    - L’application initialise la communication avec le backend.
 
 2. **Capture du document**  
-   - La caméra s’ouvre avec un guide de cadrage.  
-   - L’utilisateur positionne correctement le document pour une capture optimale (bonne luminosité, pas de reflets).  
+   - La caméra s’ouvre et l’utilisateur positionne correctement le document pour une capture optimale (bonne luminosité, pas de reflets).  
    - Après la prise de vue, l’image est envoyée à l’API Innovatrics pour extraction.
-
+     
 3. **Barre de menu supérieure**  
    Lors de la capture, un menu avec **4 boutons** est affiché en haut :  
    - 🏠 **Home** : Retourne à la page d’accueil.  
@@ -54,3 +53,4 @@ Le traitement biométrique et documentaire est effectué via le **backend Innova
    L’utilisateur peut exporter :  
    - Un **rapport PDF** contenant les images, les données et les résultats de vérification.  
    - Partager ce rapport via **WhatsApp**, email ou toute autre application installée.
+
