@@ -1,25 +1,56 @@
-## Android Document Scanner
+## 📄 Mobile Border Control – Innovatrics
 
-Android Document Scanner using [Dynamsoft Document Normalizer](https://www.dynamsoft.com/document-normalizer/docs/introduction/).
+Cette section décrit le processus complet de **lecture**, **analyse** et **vérification** d’un document avec l’application, en utilisant la solution **Innovatrics**.
 
-You can [apply for a trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) and update [this line](https://github.com/xulihang/Android-Document-Scanner/blob/78ba04916bb395ae82ddd586bd6ab0c74def39ab/app/src/main/java/com/dynamsoft/documentscanner/MainActivity.java#L75) to use Dynamsoft Document Normalizer.
+---
 
+### 🔧 Backend & API utilisée
+Le traitement biométrique et documentaire est effectué via le **backend Innovatrics** :  
+**`dot-digital-identity-service-1.53.0-amd64`**
 
-### Document Scanning Process
+- Cette API est responsable de :  
+  - L’analyse et l’extraction des données (OCR).  
+  - La vérification de l’authenticité du document.  
+  - Le matching biométrique (comparaison des visages entre document, RFID et selfie).  
+- L’application communique avec cette API en REST pour envoyer les images et recevoir les résultats.
 
-1. Start the camera using CameraX and analyse the frames to detect the boundary of documents. When the IOU of three consecutive detected polygons are over 90%, take a photo.
-2. After the photo is taken, the users are directed to a cropping activity. They can drag the corner points to adjust the detected polygons.
-3. If the user confirms that the polygon is correct, the app then runs perspective correction and cropping to get a normalized document image. Users can rotate the image and set the color mode (binary, grayscale and color) of the image.
+---
 
-A demo video of the whole process.
+### 🔄 Processus de Scan de Document
 
-<video src="https://user-images.githubusercontent.com/5462205/186093735-b1622e5e-9c50-4fe3-974a-de29a881768f.mp4" data-canonical-src="https://user-images.githubusercontent.com/5462205/186093735-b1622e5e-9c50-4fe3-974a-de29a881768f.mp4" controls="controls" muted="muted" class="d-block rounded-bottom-2 border-top width-fit" style="max-width:100%;max-height:640px;">
-</video>
+1. **Démarrage du processus**  
+   - L’utilisateur clique sur **Lecture Document** dans l’écran d’accueil.  
+   - L’application initialise la communication avec le backend.
 
-### Features
+2. **Capture du document**  
+   - La caméra s’ouvre et l’utilisateur positionne correctement le document pour une capture optimale (bonne luminosité, pas de reflets).  
+   - Après la prise de vue, l’image est envoyée à l’API Innovatrics pour extraction.
+     
+3. **Barre de menu supérieure**  
+   Lors de la capture, un menu avec **4 boutons** est affiché en haut :  
+   - 🏠 **Home** : Retourne à la page d’accueil.  
+   - 📡 **Lecture NFC** : Lance la lecture de la puce RFID si le document en possède une.  
+   - 📷 **Capture** : Permet de relancer la capture si nécessaire.  
+   - 📤 **Partager** : Permet de partager le document ou les résultats.
 
-1. live detection of documents
-2. auto scan
-3. edit detected polygons of documents
-4. support three color mode: binary, grayscale and color
+4. **Analyse et extraction**  
+   - L’API retourne :  
+     - Les champs **texte** (nom, prénom, date de naissance, date d’expiration, etc.).  
+     - Le **portrait extrait** du document.  
+   - L’application affiche ces informations à l’utilisateur.
+
+5. **Navigation par onglets**  
+   En bas de l’écran, un système d’onglets permet de consulter toutes les informations :  
+   - 🏷️ **INFO** : Données personnelles extraites.  
+   - ✅ **Authenticité** : Résultats de la vérification du document (MRZ, hologrammes, sécurité).  
+   - 🖼️ **Images** : Portrait extrait, photo du document et image RFID (si disponible).  
+   - 🔎 **Check** : Comparaison biométrique :  
+     - Portrait extrait 🆚 Selfie.  
+     - Photo RFID 🆚 Selfie.  
+   - 🔄 **Matching Données** : Vérifie la cohérence entre les données RFID et celles extraites du document.
+
+6. **Partage des résultats**  
+   L’utilisateur peut exporter :  
+   - Un **rapport PDF** contenant les images, les données et les résultats de vérification.  
+   - Partager ce rapport via **WhatsApp**, email ou toute autre application installée.
 
