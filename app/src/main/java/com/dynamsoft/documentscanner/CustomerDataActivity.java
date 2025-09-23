@@ -342,6 +342,16 @@ public class CustomerDataActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        // Redirige toujours vers HomeActivity
+        Intent intent = new Intent(this, HomeActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish(); // ferme l'activité actuelle
+    }
+
+
     private Bitmap handleRotation(String imagePath) {
         Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
         if (bitmap == null) return null;
@@ -1046,5 +1056,3 @@ public class CustomerDataActivity extends AppCompatActivity {
     }
 
 }
-// You also need to add the getPdfData() method to your Page3Fragment.
-// I recommend adding the method as shown in the previous response.}

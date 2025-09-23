@@ -522,6 +522,37 @@ public class Page4Fragment extends Fragment {
         Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
         Log.e(TAG, message);
     }
+    /**
+     * Met à jour les informations du fragment avec de nouvelles données NFC/document
+     */
+    public void updateData(String name, String surname, String personalNumber, String gender,
+                           String birthDate, String expiryDate, String serialNumber,
+                           String nationality, String docType, String issuerAuthority,
+                           @Nullable Bitmap faceBitmap) {
+
+        // Stocker les données dans les TextViews
+        if (nameTextView != null) nameTextView.setText(getNonEmpty(name));
+        if (surnameTextView != null) surnameTextView.setText(getNonEmpty(surname));
+        if (genderTextView != null) genderTextView.setText(getNonEmpty(gender));
+        if (birthDateTextView != null) birthDateTextView.setText(getNonEmpty(birthDate));
+        if (expiryDateTextView != null) expiryDateTextView.setText(getNonEmpty(expiryDate));
+        if (serialNumberTextView != null) serialNumberTextView.setText(getNonEmpty(serialNumber));
+        if (nationalityTextView != null) nationalityTextView.setText(getNonEmpty(nationality));
+        if (docTypeTextView != null) docTypeTextView.setText(getNonEmpty(docType));
+        if (issuerAuthorityTextView != null) issuerAuthorityTextView.setText(getNonEmpty(issuerAuthority));
+
+        // Mettre à jour la photo du visage si fournie
+        if (faceBitmap != null && faceImageView != null) {
+            faceImageBitmap = faceBitmap;
+            faceImageView.setImageBitmap(faceBitmap);
+            CustomerDataActivity.rfidBitmap = faceBitmap;
+            // Relancer la comparaison si le portrait est déjà chargé
+            if (cachedPortraitBitmap != null) {
+                comparisonDone = false;
+                checkAndCompareFaces();
+            }
+        }
+    }
 
     private void loadDocumentPortrait() {
         if (portraitLoaded) return; // Éviter les chargements multiples

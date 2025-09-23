@@ -110,8 +110,6 @@ public class HomeActivity extends AppCompatActivity {
         return true;
     }
 
-
-
     private boolean hasCameraPermission() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
     }
@@ -222,6 +220,7 @@ public class HomeActivity extends AppCompatActivity {
 
         return requestBody;
     }
+
     private void showLoadingUI() {
         clickableLayout.setVisibility(LinearLayout.GONE);
         loadingLayout.setVisibility(LinearLayout.VISIBLE);
@@ -236,4 +235,5 @@ public class HomeActivity extends AppCompatActivity {
         loadingLayout.setVisibility(LinearLayout.GONE);
         clickableLayout.setVisibility(LinearLayout.GONE);
     }
+
 }
