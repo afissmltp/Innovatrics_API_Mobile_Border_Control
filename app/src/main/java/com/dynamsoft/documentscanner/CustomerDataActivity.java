@@ -962,7 +962,7 @@ public class CustomerDataActivity extends AppCompatActivity {
     private void setScoreColor(Paint paint, String scoreText, int successColor, int warningColor, int errorColor) {
         try {
             float score = Float.parseFloat(scoreText);
-            if (score >= 80) {
+            if (score >= 70) {
                 paint.setColor(successColor);
             } else if (score >= 50) {
                 paint.setColor(warningColor);

@@ -53,7 +53,7 @@ public class HomeActivity extends AppCompatActivity {
 
         // Définir le titre perso
         TextView toolbarTitle = findViewById(R.id.toolbarTitle);
-        toolbarTitle.setText("Lecture de Documents SMLTP");
+        toolbarTitle.setText("SMLTP@VerifDoc");
 
 
         customerService = new CustomerService();
