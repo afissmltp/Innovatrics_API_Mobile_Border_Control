@@ -1,5 +1,6 @@
 package com.dynamsoft.documentscanner;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
@@ -17,6 +18,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.CustomerService;
+import com.dynamsoft.documentscanner.API.services.CustomerOnboarding.PassportService;
 import com.jsibbold.zoomage.ZoomageView;
 
 import org.json.JSONException;
@@ -26,14 +28,19 @@ public class Page1Fragment extends Fragment {
 
     private TextView tvDob, tvNationality, tvDocumentType, tvDocumentNumber, tvDateOfExpiry, tvIssuingAuthority;
     private ZoomageView documentImageView;
+    private ZoomageView modelDocImgView;
     private CustomerService customerService;
     private String customerId;
     private JSONObject customerData;
 
     private static Bitmap cachedDocumentBitmap = null;
     private static String cachedCustomerId = null;
-
+    private static Bitmap cachedModelPassportBitmap = null;
+    private static String cachedNation = null;
+    private static String cachedDocType = null;
     private boolean isDataDisplayed = false; // 🔹 Nouveau flag
+    private PassportService passportService;
+
 
     public static Page1Fragment newInstance(JSONObject customerData, String customerId) {
         Page1Fragment fragment = new Page1Fragment();
@@ -47,12 +54,17 @@ public class Page1Fragment extends Fragment {
     public static void clearDocumentImageCache() {
         cachedDocumentBitmap = null;
         cachedCustomerId = null;
+        cachedModelPassportBitmap = null;
+        cachedNation = null;
+        cachedDocType = null;
     }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         customerService = new CustomerService();
+        passportService = new PassportService();
+
 
         if (getArguments() != null) {
             try {
@@ -77,7 +89,7 @@ public class Page1Fragment extends Fragment {
         tvDateOfExpiry = view.findViewById(R.id.tvDateOfExpiryFragment);
         tvIssuingAuthority = view.findViewById(R.id.tvIssuingAuthorityFragment);
         documentImageView = view.findViewById(R.id.documentImageViewFragment);
-
+        modelDocImgView =  view.findViewById(R.id.modelDocImgView);
         if (customerData != null && !isDataDisplayed) {
             displayCustomerData(customerData);
         }
@@ -108,9 +120,11 @@ public class Page1Fragment extends Fragment {
 
             JSONObject document = customer.getJSONObject("document");
             JSONObject mrz = document.optJSONObject("mrz");
-            String docType = "N/A";
+            String docType;
             if (mrz != null && mrz.optJSONObject("td3") != null) {
                 docType = mrz.getJSONObject("td3").optString("documentCode", "N/A");
+            } else {
+                docType = "N/A";
             }
 
             String docNum = document.optJSONObject("documentNumber") != null ? document.getJSONObject("documentNumber").optString("mrz", "N/A") : "N/A";
@@ -123,6 +137,37 @@ public class Page1Fragment extends Fragment {
             tvDocumentNumber.setText(docNum);
             tvDateOfExpiry.setText(expiry);
             tvIssuingAuthority.setText(issuingAuth);
+
+            Log.d("Page1Fragment", "Appel à fetchPassportImage avec nation=" + nation + " docType=" + docType);
+
+            if (cachedModelPassportBitmap != null
+                    && nation.equals(cachedNation)
+                    && docType.equals(cachedDocType)) {
+                modelDocImgView.setImageBitmap(cachedModelPassportBitmap);
+                modelDocImgView.setVisibility(View.VISIBLE);
+                Log.d("Page1Fragment", "Image modèle chargée depuis le cache");
+                return;
+            }
+
+            passportService.fetchPassportImage(nation, docType, new PassportService.PassportImageCallback() {
+                @Override
+                public void onSuccess(Bitmap bitmap) {
+                    requireActivity().runOnUiThread(() -> {
+                        if (bitmap != null) {
+                            cachedModelPassportBitmap = bitmap;
+                            cachedNation = nation;
+                            cachedDocType = docType;
+                            modelDocImgView.setImageBitmap(bitmap);
+                            modelDocImgView.setVisibility(View.VISIBLE);
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.e("Page1Fragment", "Erreur fetchPassportImage", e);
+                }
+            });
 
             isDataDisplayed = true; // 🔹 Flag activé après affichage
         } catch (JSONException e) {

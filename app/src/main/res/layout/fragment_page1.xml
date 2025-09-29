@@ -162,10 +162,20 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
+            android:orientation="vertical"
             android:layout_marginTop="16dp">
 
+            <!-- Texte au-dessus de l'image -->
+            <TextView
+                android:id="@+id/documentTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Photo du document"
+                android:textSize="16sp"
+                android:textColor="#666"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Image Zoomable -->
             <com.jsibbold.zoomage.ZoomageView
                 android:id="@+id/documentImageViewFragment"
                 android:layout_width="match_parent"
@@ -180,5 +190,39 @@
                 app:zoomage_maxScale="8"
                 app:zoomage_minScale="0.6"/>
         </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp">
+
+            <!-- Texte au-dessus de l'image -->
+            <TextView
+                android:id="@+id/modelDocTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Modèle du document"
+                android:textSize="16sp"
+                android:textColor="#666"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Image Zoomable -->
+            <com.jsibbold.zoomage.ZoomageView
+                android:id="@+id/modelDocImgView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                tools:srcCompat="@tools:sample/backgrounds/scenic"
+                app:zoomage_zoomable="true"
+                app:zoomage_translatable="true"
+                app:zoomage_autoCenter="true"
+                app:zoomage_animateOnReset="true"
+                app:zoomage_maxScale="8"
+                app:zoomage_minScale="0.6"/>
+        </LinearLayout>
+
     </LinearLayout>
+
 </ScrollView>

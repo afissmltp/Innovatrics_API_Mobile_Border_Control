@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">8d80f2dd0d13.ngrok-free.app</domain>
-        <trust-anchors>
-            <certificates src="system"/>
-        </trust-anchors>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">51.178.87.12</domain>
+        <domain includeSubdomains="true">146.59.237.231</domain>
     </domain-config>
 </network-security-config>
